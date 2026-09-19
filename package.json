@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Vue.js 模板驱动 Wiki 系统：展示系统与编辑系统共用一份内容数据与模板 Schema",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18.0"
   },
   "workspaces": [
     "shared",
@@ -13,9 +13,9 @@
     "editor"
   ],
   "scripts": {
-    "gen": "node scripts/build-index.ts",
-    "check": "node scripts/build-index.ts && vue-tsc --noEmit -p tsconfig.json",
-    "test": "node --test shared/richtext/parse.test.ts editor/src/state/tree.test.ts editor/src/state/history.test.ts editor/src/state/editor.test.ts",
+    "gen": "node scripts/node-guard.mjs && node scripts/build-index.ts",
+    "check": "node scripts/node-guard.mjs && node scripts/build-index.ts && vue-tsc --noEmit -p tsconfig.json",
+    "test": "node scripts/node-guard.mjs && node --test shared/richtext/parse.test.ts editor/src/state/tree.test.ts editor/src/state/history.test.ts editor/src/state/editor.test.ts",
     "dev:public": "npm run dev --workspace public-site",
     "dev:editor": "npm run dev --workspace editor",
     "build:public": "npm run build --workspace public-site",

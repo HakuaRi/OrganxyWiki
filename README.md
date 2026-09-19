@@ -9,6 +9,16 @@
 - `prototype/style-sample.html`：展示系统的视觉样板，样式判断以它为准。
 - `prototype/editor-sample.html`：编辑系统的交互样板。
 
+## 环境要求
+
+**Node 22.18 以上。** 构建脚本与单元测试是 TypeScript 源文件，靠 Node 原生的类型剥离直接运行，这个能力从 Node 22.18 起才默认开启。仓库里的 `.nvmrc` 写的是 24。
+
+版本不够时 `npm run check` 会先打印一段说明再退出，不会抛一句看不懂的 `ERR_UNKNOWN_FILE_EXTENSION`。GitHub Actions 里已经把版本固定为 24。
+
+```bash
+nvm install 24 && nvm use 24     # 或 fnm install 24 && fnm use 24
+```
+
 ## 开发
 
 ```bash

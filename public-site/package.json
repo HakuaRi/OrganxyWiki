@@ -6,8 +6,8 @@
   "description": "展示系统：只读，构建期预渲染为静态站",
   "scripts": {
     "gen": "node ../scripts/build-index.ts",
-    "dev": "node ../scripts/build-index.ts && vite",
-    "build": "node ../scripts/build-index.ts && vite build && vite build --ssr src/entry-server.ts --outDir dist-ssr && node ../scripts/prerender.ts",
+    "dev": "node ../scripts/node-guard.mjs && node ../scripts/build-index.ts && vite",
+    "build": "node ../scripts/node-guard.mjs && node ../scripts/build-index.ts && vite build && vite build --ssr src/entry-server.ts --outDir dist-ssr && node ../scripts/prerender.ts",
     "preview": "vite preview"
   },
   "dependencies": {

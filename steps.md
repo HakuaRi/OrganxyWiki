@@ -391,3 +391,4 @@ M3 总体验收：在本地编辑器里改一页并真实提交，线上自动�
 8. fs.cpSync 在 Windows 加 Node 24 的组合下会让进程直接崩掉（退出码 0xC0000409，无任何输出）。产物组装改成自己写的递归复制。
 9. 组件模板里顶层 ref 会被自动解包、对象里的 ref 不会。所以顶层那个 repoConfigured 直接用，对象里的 auth.signedIn 要带 .value；写混了类型检查会报「Property value does not exist on type boolean」。
 10. GitHub 的 Device Flow 端点不支持跨域（实测无 Access-Control-Allow-Origin，且带 default-src none 的 CSP），浏览器直连必报 Failed to fetch；只有 api.github.com 支持跨域。纯静态站只能用令牌认证，不能用 Device Flow。
+11. 原生运行 TypeScript 需要 Node 22.18 以上（该版本起默认开启类型剥离）。工作流原先写死 node-version 20，CI 上 npm run check 直接报 ERR_UNKNOWN_FILE_EXTENSION，报错本身看不出原因。已把 CI 固定到 24、engines 提到 >=22.18、加 .nvmrc，并写了 scripts/node-guard.mjs 这道版本闸门：版本不够时先打印人话再退出。
