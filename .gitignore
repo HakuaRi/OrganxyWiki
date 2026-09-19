@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+.DS_Store
+Thumbs.db
+
+# 构建期生成的索引，由 scripts/build-index.ts 产出
+public-site/src/generated/

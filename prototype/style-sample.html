@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>沈括 - 示例Wiki（展示系统样板 v3）</title>
+<!--
+  ============================================================================
+  展示系统样板 v3（静态原型），对应 plan.md 第三节
+  v4 改动（相对 v3）：
+    1. 信息框与侧边栏模板改回右侧浮动列，正文环绕并为其让出空间；
+       必须整宽的块（表格、导航盒、分类条、页脚）显式清除右侧浮动，不会被压住或切断。
+    2. 图片补齐左右浮动实例：右浮动一处、左浮动一处，文字跨行环绕；
+       折叠框内保留一处随流图片，三种对齐都有实物可看。
+    3. v3 的其余改动保留：只留 Vector 2022、黄绿链接、圆角 5px、已删讨论标签。
+  无框架、无外部依赖、无 emoji、无中点分隔符。
+  ============================================================================
+-->
+<style>
+/* ===== 设计变量 ===== */
+:root{
+  /* 文字（暖中性一套） */
+  --ink:#24272a;
+  --ink-soft:#5c6268;
+  --ink-faint:#7d838a;
+  /* 结构（极浅描边，靠明度分层） */
+  --line:#e6e7e6;
+  --line-soft:#efefee;
+  --surface:#ffffff;
+  --surface-2:#fafaf9;
+  --surface-3:#f4f5f4;
+  /* 强调：亮黄绿 */
+  --accent:#c8ef4a;
+  --accent-soft:#eff9cd;
+  --accent-ink:#3f4a12;
+  /* 链接：黄绿色（深一档以保证正文可读） */
+  --link:#5f7d10;
+  --link-hover:#41600a;
+  --link-visited:#6d7350;
+  --link-new:#a35a52;
+  --warn:#c9a86a;
+  /* 字体 */
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --sidebar-w:210px;
+  --content-max:960px;
+  --radius:5px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--surface);color:var(--ink);
+  font-family:var(--font-sans);font-size:15px;line-height:1.7;
+}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline;color:var(--link-hover)}
+a:visited{color:var(--link-visited)}
+a.new{color:var(--link-new)}
+a.ext::after{
+  content:"";display:inline-block;width:.5em;height:.5em;margin-left:.3em;
+  border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;
+  transform:rotate(45deg) translate(-1px,1px);opacity:.7;
+}
+img,svg{max-width:100%}
+
+/* 导航类链接的悬停高亮 */
+.sidebar a:hover,.tools a:hover,.toc a:hover,.navbox a:hover,.catlinks a:hover,
+.tabs a:hover,.head-tools a:hover,.mw-footer a:hover{
+  background:var(--accent-soft);border-radius:var(--radius);text-decoration:none;
+}
+
+/* ===== 顶部控制条（仅原型使用） ===== */
+.proto-bar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;gap:.6em;flex-wrap:wrap;
+  padding:.3em .9em;background:var(--surface-3);color:var(--ink-soft);
+  border-bottom:1px solid var(--line);font-size:12px;
+}
+.proto-bar b{font-weight:700;color:var(--ink)}
+.proto-bar .spacer{flex:1}
+.proto-bar .hint{color:var(--ink-faint)}
+.proto-bar a,.proto-bar button{
+  font:inherit;color:var(--ink-soft);background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:.22em .75em;cursor:pointer;text-decoration:none;
+}
+.proto-bar a:hover,.proto-bar button:hover{background:var(--accent-soft);color:var(--ink);text-decoration:none}
+body{padding-top:29px}
+
+/* ===== 顶栏 ===== */
+.site-header{
+  position:sticky;top:29px;z-index:50;display:flex;align-items:center;gap:1.2em;
+  padding:.6em 1.6em;background:var(--surface);border-bottom:1px solid var(--line);
+}
+.site-header .logo{display:flex;align-items:center;gap:.55em;text-decoration:none;color:var(--ink)}
+.site-header .logo:hover{text-decoration:none}
+.site-header .wordmark{font-size:1.25em;font-weight:700;line-height:1.1}
+.site-header .tagline{display:block;font-size:.7em;color:var(--ink-faint);font-weight:400}
+.site-header .search{flex:1 1 auto;max-width:440px;margin:0 auto 0 0}
+.site-header .head-tools{display:flex;gap:1em;font-size:.85em;white-space:nowrap}
+.site-header .head-tools a{display:inline-block;padding:0 .25em;margin:0 -.25em}
+
+.search{display:flex;border:1px solid var(--line);background:#fff;border-radius:var(--radius);
+        transition:border-color .15s,box-shadow .15s}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;
+              padding:.35em .6em;font:inherit;font-size:.95em;color:var(--ink)}
+.search input::placeholder{color:var(--ink-faint)}
+.search button{border:0;border-left:1px solid var(--line-soft);background:transparent;
+               padding:0 .65em;cursor:pointer;display:flex;align-items:center;
+               border-radius:0 var(--radius) var(--radius) 0}
+.search button:hover{background:var(--accent-soft)}
+.search button .mag{position:relative;display:block;width:9px;height:9px;border:1.5px solid var(--ink-soft);border-radius:50%}
+.search button .mag::after{content:"";position:absolute;right:-4px;bottom:-3px;width:5px;height:1.5px;
+               background:var(--ink-soft);transform:rotate(45deg);transform-origin:left center}
+
+/* ===== 三栏布局 ===== */
+.body-wrap{
+  display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr) var(--sidebar-w);
+  gap:0 2.2em;max-width:1650px;margin:0 auto;padding:1.5em 1.6em 0;
+}
+
+/* --- 左栏：目录与导航 --- */
+.sidebar{font-size:.9em;position:sticky;top:118px;align-self:start;
+         max-height:calc(100vh - 130px);overflow:auto}
+.portal{margin:0 0 1.5em}
+.portal h3{font-size:.85em;font-weight:700;margin:0 0 .4em}
+.portal ul{list-style:none;margin:0;padding:0}
+.portal li{margin:.15em 0}
+.portal a{display:inline-block;padding:0 .25em;margin:0 -.25em}
+
+.toc{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius);
+     padding:.65em .85em .8em;margin:0 0 1.6em;font-size:.95em}
+.toc-head{font-weight:700;text-align:left}
+.toc-head .toggle{font-weight:400;font-size:.9em;color:var(--ink-faint);margin-left:.3em}
+.toc ul{list-style:none;margin:.45em 0 0;padding:0}
+.toc li{margin:.1em 0}
+.toc a{display:inline-block;padding:0 .3em;margin:0 -.3em;color:var(--link)}
+.toc .num{color:var(--ink-faint);margin-right:.5em;font-variant-numeric:tabular-nums}
+.toc li.lv3{padding-left:1.3em;font-size:.95em}
+
+/* --- 中栏：正文 --- */
+.content{min-width:0;max-width:var(--content-max)}
+
+.tabs{display:flex;justify-content:space-between;align-items:center;gap:1em;
+      border-bottom:1px solid var(--line);margin:0 0 .9em;padding:0 0 .4em;font-size:.86em}
+.tabs .tab-list{display:flex;gap:1.2em}
+.tabs .tab{padding:.15em 0;border-bottom:2px solid transparent;color:var(--link)}
+.tabs .tab.active{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+
+.site-sub{font-size:.8em;color:var(--ink-faint);margin:.4em 0 .2em}
+
+h1.firstHeading{font-size:1.8em;font-weight:700;line-height:1.3;margin:.1em 0 .5em}
+.mw-parser-output h2{font-size:1.45em;font-weight:700;line-height:1.3;margin:1.4em 0 .5em;
+      padding-bottom:.2em;border-bottom:1px solid var(--line)}
+.mw-parser-output h3{font-size:1.15em;font-weight:700;margin:1.2em 0 .35em}
+.mw-parser-output h4{font-size:1.02em;font-weight:700;margin:.9em 0 .25em}
+.mw-parser-output p{margin:.6em 0 .95em}
+.mw-parser-output ul,.mw-parser-output ol{margin:.45em 0 1em;padding-left:1.9em}
+.mw-parser-output li{margin:.15em 0}
+.mw-parser-output code{font-family:var(--font-mono);font-size:.9em;background:var(--surface-3);
+      border-radius:var(--radius);padding:.05em .3em;color:var(--ink-soft)}
+.mw-editsection{float:right;font-size:.72em;font-weight:400;color:var(--ink-faint);margin-left:.6em}
+.mw-editsection a{color:var(--link)}
+
+/* --- 信息框：右侧浮动列。正文环绕并自动收窄，为它让出空间 --- */
+.mw-parser-output{display:flow-root}          /* 包住浮动，不让它溢出或压到别处 */
+.infobox{float:right;clear:right;width:21em;max-width:100%;
+         margin:.2em 0 1.2em 1.5em;border:1px solid var(--line);
+         border-radius:var(--radius);background:var(--surface-2);
+         font-size:.92em;line-height:1.55}
+.infobox .ib-head{padding:.55em .9em;background:var(--surface-3);
+         border-radius:var(--radius) var(--radius) 0 0;border-bottom:1px solid var(--line-soft);
+         text-align:center}
+.infobox .ib-title{font-weight:700;font-size:1.05em}
+.infobox .ib-sub{color:var(--ink-faint);font-size:.9em;margin-top:.1em}
+.infobox .ib-body{padding:.75em}
+.infobox .ib-figure{margin:0 0 .7em;border:1px solid var(--line);
+         border-radius:var(--radius);background:#fff;padding:.3em;text-align:center}
+.infobox .ib-figure figcaption{font-size:.82em;color:var(--ink-faint);padding:.35em .2em .1em;line-height:1.5}
+.infobox .ib-rows{width:100%;border-collapse:collapse}
+.infobox .ib-rows th{width:5.6em;text-align:left;font-weight:700;color:var(--ink-soft);
+         padding:.3em .5em .3em 0;vertical-align:top}
+.infobox .ib-rows td{padding:.3em 0;vertical-align:top}
+.infobox .ib-rows tr+tr th,.infobox .ib-rows tr+tr td{border-top:1px solid var(--line-soft)}
+
+/* --- 侧边栏模板：同样回到右侧，叠在信息框下方 --- */
+.sidebar-tpl{float:right;clear:right;width:21em;max-width:100%;margin:0 0 1.2em 1.5em;
+         border:1px solid var(--line);border-radius:var(--radius);
+         background:var(--surface-2);font-size:.92em}
+.sidebar-tpl .st-title{padding:.55em .9em;background:var(--surface-3);font-weight:700;
+         border-radius:var(--radius) var(--radius) 0 0;border-bottom:1px solid var(--line-soft);
+         text-align:center}
+.sidebar-tpl .st-body{display:block}
+.sidebar-tpl .st-block{padding:.6em .85em;background:#fff}
+.sidebar-tpl .st-block+.st-block{border-top:1px solid var(--line-soft)}
+.sidebar-tpl .st-block h4{margin:0 0 .3em;font-size:.92em;color:var(--ink-faint);font-weight:700}
+.sidebar-tpl .st-block ul{margin:0;padding-left:1.35em}
+
+/* --- 空间让位规则 ---
+   凡是有边框、底色、或自带右侧浮动标记的块，一律清除右侧浮动：
+   它们绝对不会横穿右侧列，也不会被右侧列压住、切掉边框或切断底色。
+   只有纯文本段落与列表继续环绕，自动收窄到右侧列左边的可用宽度。 */
+.mw-parser-output h2,
+.mw-parser-output h3,
+.mw-parser-output h4,
+.collapsible,.notice,.quote,.code,.figure,
+.wikitable,.navbox,.catlinks,.mw-footer{clear:right}
+/* [编辑] 小标在清除浮动后的标题里浮动，永远不会贴到右侧列上 */
+.mw-editsection{clear:none}
+
+/* --- 提示框 --- */
+.notice{display:flex;gap:.7em;align-items:flex-start;
+        border:1px solid var(--line);border-left:3px solid var(--accent);
+        border-radius:var(--radius);background:var(--surface-2);
+        margin:1em 0;padding:.65em .9em;font-size:.95em}
+.notice .n-icon{flex:0 0 auto;width:1.3em;height:1.3em;border-radius:var(--radius);
+        font-weight:700;font-size:.9em;line-height:1.3em;text-align:center;margin-top:.22em;
+        background:var(--accent);color:var(--accent-ink)}
+.notice .n-body{flex:1}
+.notice .n-body p{margin:.15em 0}
+.notice-warn{border-left-color:var(--warn)}
+.notice-warn .n-icon{background:var(--warn);color:#3d3016}
+
+/* --- 折叠框 --- */
+.collapsible{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);
+        margin:1em 0;font-size:.97em}
+.collapsible>summary{list-style:none;cursor:pointer;background:var(--surface-3);
+        padding:.45em .85em;font-weight:700;border-radius:var(--radius) var(--radius) 0 0}
+.collapsible>summary:hover{background:var(--accent-soft)}
+.collapsible>summary::-webkit-details-marker{display:none}
+.collapsible>summary::after{content:"[隐藏]";float:right;font-weight:400;font-size:.85em;color:var(--ink-faint)}
+.collapsible:not([open])>summary::after{content:"[显示]"}
+.collapsible>summary:hover::after{color:var(--ink-soft)}
+.collapsible .col-body{padding:.8em .95em;background:#fff;border-top:1px solid var(--line-soft);
+        border-radius:0 0 var(--radius) var(--radius)}
+.collapsible .col-body>*:first-child{margin-top:0}
+.collapsible .col-body>*:last-child{margin-bottom:0}
+
+/* --- 表格：只用横线 --- */
+.wikitable{border-collapse:collapse;margin:.9em 0 1.3em;font-size:.93em;width:100%;
+        border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.wikitable caption{font-weight:700;padding:.3em 0 .5em;text-align:left;color:var(--ink-soft);font-size:.95em}
+.wikitable th,.wikitable td{padding:.45em .75em;text-align:left;vertical-align:top;
+        border-bottom:1px solid var(--line-soft)}
+.wikitable thead th{background:var(--surface-3);font-weight:700;color:var(--ink-soft);
+        border-bottom:1px solid var(--line)}
+.wikitable tbody tr:hover td{background:var(--surface-2)}
+
+/* --- 引用 --- */
+.quote{margin:1em 0 1.2em;padding:.65em 1.15em;border-left:2px solid var(--line);
+        background:var(--surface-2);border-radius:0 var(--radius) var(--radius) 0}
+.quote .q-text{margin:0}
+.quote .q-src{display:block;text-align:right;font-size:.88em;color:var(--ink-faint);margin-top:.4em}
+
+/* --- 代码块：灰阶着色 --- */
+.code{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);
+        padding:.8em 1em;margin:.9em 0 1.3em;overflow:auto;
+        font-family:var(--font-mono);font-size:.85em;line-height:1.55;white-space:pre;color:var(--ink-soft)}
+.code .c-key{color:var(--ink);font-weight:700}
+.code .c-str{color:var(--ink-soft)}
+.code .c-com{color:var(--ink-faint);font-style:italic}
+
+/* --- 图片：三种对齐。随流为默认；左右浮动时文字跨行环绕 --- */
+.figure{margin:1.1em 0;border:1px solid var(--line);border-radius:var(--radius);
+        background:var(--surface-2);padding:.35em;max-width:430px}
+.figure.fig-center{margin-left:auto;margin-right:auto}
+.figure.fig-right{float:right;clear:right;margin:.3em 0 1em 1.5em;max-width:330px}
+.figure.fig-left{float:left;clear:left;margin:.3em 1.5em 1em 0;max-width:330px}
+.figure .fig-inner{background:#fff;display:block;border-radius:var(--radius);overflow:hidden}
+.figure figcaption{font-size:.84em;color:var(--ink-faint);padding:.45em .35em .15em;line-height:1.5}
+
+/* --- 导航盒 --- */
+.navbox{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);
+        font-size:.88em;margin:1.6em 0 1em}
+.navbox .nv-title{text-align:center;font-weight:700;padding:.45em .65em;background:var(--surface-3);
+        border-radius:var(--radius) var(--radius) 0 0}
+.navbox .nv-title .toggle{font-weight:400;font-size:.9em;margin-left:.5em;color:var(--ink-faint)}
+.navbox .nv-row{display:flex;border-top:1px solid var(--line-soft)}
+.navbox .nv-th{flex:0 0 7.5em;background:var(--surface-3);padding:.45em .7em;text-align:center;
+        font-weight:700;color:var(--ink-soft)}
+.navbox .nv-td{flex:1;padding:.45em .85em;background:#fff}
+.navbox .nv-td a{display:inline-block;padding:0 .2em;margin:0 -.2em}
+
+/* --- 分类条与页脚 --- */
+.catlinks{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);
+        padding:.55em .85em;margin:2em 0 0;font-size:.9em}
+.catlinks b{color:var(--ink-faint);font-weight:400;margin-right:.2em}
+.catlinks a{display:inline-block;padding:0 .2em;margin:0 -.2em}
+.catlinks .cat-sep{color:var(--ink-faint);margin:0 .1em}
+.mw-footer{font-size:.8em;color:var(--ink-faint);border-top:1px solid var(--line-soft);
+        padding:1.3em 0 3em;margin-top:1.8em}
+.mw-footer ul{list-style:none;display:flex;flex-wrap:wrap;gap:0 1.2em;margin:0 0 .5em;padding:0}
+.mw-footer .last-edit{margin:0 0 .35em}
+.mw-footer a{padding:0 .2em;margin:0 -.2em}
+
+/* --- 右栏：站点级工具（页面级内容一律在正文流里） --- */
+.tools{font-size:.88em;position:sticky;top:118px;align-self:start}
+.tools h3{font-size:.85em;font-weight:700;margin:0 0 .4em}
+.tools ul{list-style:none;margin:0 0 1.6em;padding:0}
+.tools li{margin:.15em 0}
+.tools a{display:inline-block;padding:0 .25em;margin:0 -.25em}
+
+/* ===== 原型说明面板 ===== */
+.notes{position:fixed;right:1em;bottom:1em;z-index:90;width:31em;max-width:calc(100vw - 2em);
+  max-height:72vh;overflow:auto;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);box-shadow:0 6px 24px rgba(36,39,42,.10);font-size:12.5px;line-height:1.65}
+.notes[hidden]{display:none}
+.notes header{display:flex;align-items:center;justify-content:space-between;gap:1em;
+  background:var(--surface-3);border-bottom:1px solid var(--line);padding:.45em .8em;font-weight:700;
+  border-radius:var(--radius) var(--radius) 0 0}
+.notes header button{font:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:.1em .6em;cursor:pointer;color:var(--ink-soft)}
+.notes header button:hover{background:var(--accent-soft)}
+.notes header .dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;
+  background:var(--accent);margin-right:.45em;vertical-align:middle}
+.notes ol{margin:0;padding:.75em 1em .95em 2.4em}
+.notes li{margin:.45em 0}
+.notes .tag{color:var(--ink-faint)}
+.notes code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-3);
+  border-radius:var(--radius);padding:.05em .28em}
+
+/* ===== 窄屏 ===== */
+@media (max-width:1080px){
+  .body-wrap{grid-template-columns:1fr;padding:1em}
+  .sidebar,.tools{position:static;max-height:none}
+  .sidebar{order:2}
+  .tools{order:3;margin-top:1.5em}
+}
+@media (max-width:760px){
+  /* 窄屏不再让位：右侧列落到正文上方，全部恢复整宽 */
+  .infobox,.sidebar-tpl{float:none;width:100%;margin:1.2em 0}
+  .figure.fig-right,.figure.fig-left,.figure.fig-center{float:none;margin:1.1em auto;max-width:100%}
+  .figure.fig-left{margin-left:0}
+  .notes{width:auto;left:1em}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== 原型控制条（非站点元素） ===================== -->
+<div class="proto-bar">
+  <b>样板控制</b>
+  <span>展示系统（Vector 2022 皮肤）</span>
+  <span class="spacer"></span>
+  <span class="hint">静态样板：链接不跳转，交互仅折叠</span>
+  <a href="editor-sample.html">打开编辑器样板</a>
+  <button type="button" id="notes-toggle">改版确认清单</button>
+</div>
+
+<!-- ===================== 粘性顶栏 ===================== -->
+<header class="site-header">
+  <a class="logo" href="#top">
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x=".75" y=".75" width="30.5" height="30.5" rx="5" style="fill:none;stroke:#e6e7e6"/>
+      <path d="M8 23c3-8 6-12 8-12s5 4 8 12" style="fill:none;stroke:#5f7d10" stroke-width="1.8"/>
+      <path d="M5 25h22" style="stroke:#7d838a" stroke-width="1.2"/>
+    </svg>
+    <span>
+      <span class="wordmark">示例Wiki</span>
+      <span class="tagline">自由的知识条目</span>
+    </span>
+  </a>
+  <form class="search" role="search" onsubmit="return false">
+    <input type="search" placeholder="搜索示例Wiki" aria-label="搜索">
+    <button type="submit" aria-label="搜索"><span class="mag"></span></button>
+  </form>
+  <nav class="head-tools">
+    <a href="editor-sample.html">编辑本页</a>
+    <a href="#">退出登录</a>
+  </nav>
+</header>
+
+<div class="body-wrap" id="top">
+
+  <!-- ===================== 左栏：目录与导航 ===================== -->
+  <aside class="sidebar">
+    <nav class="toc toc--side" aria-label="目录"></nav>
+    <nav class="portal">
+      <h3>导航</h3>
+      <ul>
+        <li><a href="#">首页</a></li>
+        <li><a href="#">最近更改</a></li>
+        <li><a href="#">随机页面</a></li>
+      </ul>
+    </nav>
+    <nav class="portal">
+      <h3>全部页面</h3>
+      <ul>
+        <li><a href="#">沈括</a></li>
+        <li><a href="#">梦溪笔谈</a></li>
+        <li><a href="#">毕昇</a></li>
+        <li><a href="#">苏颂</a></li>
+        <li><a href="#" class="new">宋辽边界交涉</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ===================== 中栏：正文 ===================== -->
+  <main class="content">
+    <nav class="tabs" aria-label="页面操作">
+      <span class="tab-list">
+        <span class="tab active"><a href="#">页面</a></span>
+      </span>
+      <span class="tab-list">
+        <span class="tab active"><a href="#">阅读</a></span>
+        <span class="tab"><a href="editor-sample.html">编辑</a></span>
+        <span class="tab"><a href="#" class="ext" title="在 GitHub 上查看该文件的提交历史">查看历史</a></span>
+      </span>
+    </nav>
+
+    <div class="site-sub">出自 示例Wiki</div>
+    <h1 class="firstHeading">沈括</h1>
+
+    <div class="mw-parser-output">
+
+      <!-- 提示框块（info） -->
+      <div class="notice">
+        <span class="n-icon">i</span>
+        <div class="n-body">
+          <p><b>这是一页视觉样板。</b>页面内容仅用于演示各内容块的渲染效果，用以确认排版与配色，不是真实条目。</p>
+        </div>
+      </div>
+
+      <!-- ============ 信息框块：右侧浮动列，正文为它让出空间 ============ -->
+      <section class="infobox">
+        <div class="ib-head">
+          <div class="ib-title">沈括</div>
+          <div class="ib-sub">北宋政治家、科学家</div>
+        </div>
+        <div class="ib-body">
+          <figure class="ib-figure">
+            <span class="fig-inner">
+              <svg width="196" height="150" viewBox="0 0 196 150" aria-label="示例图片占位" role="img">
+                <rect x=".75" y=".75" width="194.5" height="148.5" style="fill:#fafaf9;stroke:#e6e7e6"/>
+                <g style="stroke:#e6e7e6" stroke-width="1"><path d="M0 0l196 150M196 0L0 150"/></g>
+                <text x="98" y="80" text-anchor="middle" font-size="12" font-family="sans-serif"
+                      style="fill:#7d838a">示例图片（占位）</text>
+              </svg>
+            </span>
+            <figcaption>画像为示意占位，非历史图像</figcaption>
+          </figure>
+          <table class="ib-rows">
+            <tbody>
+              <tr><th>姓名</th><td>沈括</td></tr>
+              <tr><th>字</th><td>存中</td></tr>
+              <tr><th>号</th><td>梦溪丈人</td></tr>
+              <tr><th>出生</th><td>1031年，杭州钱塘县</td></tr>
+              <tr><th>逝世</th><td>1095年，润州（今江苏镇江）</td></tr>
+              <tr><th>领域</th><td>数学、天文、地理、医药</td></tr>
+              <tr><th>代表作</th><td>《梦溪笔谈》</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 侧边栏块：同样在右侧，叠在信息框下方 ============ -->
+      <section class="sidebar-tpl">
+        <div class="st-title">沈括相关条目</div>
+        <div class="st-body">
+          <div class="st-block">
+            <h4>著作</h4>
+            <ul>
+              <li><a href="#">梦溪笔谈</a></li>
+              <li><a href="#">苏沈良方</a></li>
+              <li><a href="#">长兴集</a>（已佚）</li>
+            </ul>
+          </div>
+          <div class="st-block">
+            <h4>相关人物</h4>
+            <ul>
+              <li><a href="#">王安石</a>、<a href="#">苏轼</a></li>
+              <li><a href="#">毕昇</a>、<a href="#">苏颂</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <p><b>沈括</b>（1031年—1095年），字<b>存中</b>，号<b>梦溪丈人</b>，杭州钱塘县（今浙江杭州）人，北宋政治家、科学家。他历任沭阳县主簿、提举司天监、权三司使、知延州等职，参与了<a href="#">熙宁变法</a>，也曾<a href="#">出使辽国</a>交涉边界。晚年隐居润州梦溪园，写成《<a href="#">梦溪笔谈</a>》二十六卷。</p>
+      <p>沈括的研究横跨数学、天文、历法、地理、地质、医药与乐律。他在《梦溪笔谈》中记录并讨论了<a href="#">隙积术</a>、<a href="#">会圆术</a>、<a href="#">十二气历</a>等内容，也留下了关于<a href="#">毕昇</a>活字印刷术的唯一传世记载。英国科学史家<a href="#" class="ext">李约瑟</a>称《梦溪笔谈》为“中国科学史上的坐标”。</p>
+      <p>他出身官宦之家，父沈周官至太常少卿。皇祐三年（1051年）以父荫入仕，任沭阳县主簿，主持疏浚沭水、筑堤造田；嘉祐八年（1063年）中进士，此后历任昭文馆编校、提举司天监等职。熙宁年间他支持并参与变法，先后担任权三司使、翰林学士，主持整顿盐政与财政。</p>
+      <p>熙宁八年（1075年），宋辽因边界划分发生争执，沈括奉命出使辽国交涉。他事先查阅档案、绘制边界图册，据理力争，使争议边界得以维持原状；归途所记山川道里风俗，写成《使契丹图抄》。元丰五年（1082年）宋军在永乐城之战中大败，他因处置失当被贬，此后辗转均州、秀州，晚年才获准迁居润州。</p>
+      <p>《梦溪笔谈》二十六卷及《补笔谈》《续笔谈》记其见闻与考辨，内容涉及自然科学的多个门类，也保存了北宋若干技术与制度的细节。此外他编有医方书《良方》，后与苏轼方书合刊为《苏沈良方》。</p>
+
+      <h2 id="s1">生平<span class="mw-editsection">[<a href="#">编辑</a>]</span></h2>
+
+      <h3 id="s1-1">早年与仕途<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <p>沈括出身官宦之家，父沈周官至太常少卿。皇祐三年（1051年），沈括以父荫入仕，任沭阳县主簿，主持疏浚沭水、筑堤造田。嘉祐八年（1063年）中进士，此后历任昭文馆编校、提举司天监等职。</p>
+      <p>熙宁年间，沈括支持并参与<a href="#">王安石变法</a>，先后担任权三司使、翰林学士，主持整顿盐政与财政。他同时参与修订历法、改良仪器，是当时少见的兼具行政与学术能力的官员。</p>
+
+      <h3 id="s1-2">出使辽国<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <p>熙宁八年（1075年），宋辽因边界划分发生争执，沈括奉命出使辽国交涉。他事先查阅档案，绘制边界图册，据理力争，最终使争议边界得以维持原状。归途中他记录了沿途山川、道路与风俗，写成《使契丹图抄》。</p>
+
+      <!-- 折叠框块：内含图片块与段落块 -->
+      <details class="collapsible" open>
+        <summary>边界交涉的一段插曲</summary>
+        <div class="col-body">
+          <p>据《宋史》本传记载，沈括在辽廷以所录档案为据逐条辩驳，对方“无以应”。此行的图记后来成为北宋了解北方边地的重要资料，今已散佚，仅部分内容见于他书征引。</p>
+          <figure class="figure fig-center">
+            <span class="fig-inner">
+              <svg width="380" height="150" viewBox="0 0 380 150" aria-label="示意图占位" role="img">
+                <rect width="380" height="150" style="fill:#fff"/>
+                <path d="M0 118l94-52 70 30 78-58 138 74" style="fill:none;stroke:#5f7d10" stroke-width="1.8"/>
+                <path d="M0 134h380" style="stroke:#e6e7e6" stroke-width="1.4" stroke-dasharray="6 4"/>
+                <text x="190" y="24" text-anchor="middle" font-size="12" font-family="sans-serif"
+                      style="fill:#7d838a">使辽路线示意（占位图）</text>
+              </svg>
+            </span>
+            <figcaption>图注由图片块的 caption 字段渲染。图片默认随流排列，仍保留 align 参数可选左浮动或右浮动。</figcaption>
+          </figure>
+          <p>这段经历也体现了他一贯的方法：先收集原始材料，再以图、表、数据支撑结论。</p>
+        </div>
+      </details>
+
+      <h3 id="s1-3">晚年<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <p>元丰五年（1082年），宋军在永乐城之战中大败，沈括因处置失当被贬。此后他辗转均州、秀州等地，元丰八年（1085年）后获准迁居润州。他在梦溪园中闭门著述，完成《梦溪笔谈》及其续笔，绍圣二年（1095年）去世。</p>
+
+      <h2 id="s2">学术成就<span class="mw-editsection">[<a href="#">编辑</a>]</span></h2>
+
+      <h3 id="s2-1">数学与天文<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <!-- 图片块：align 设为右浮动，文字跨行环绕在它左侧 -->
+      <figure class="figure fig-right">
+        <span class="fig-inner">
+          <svg width="300" height="180" viewBox="0 0 300 180" aria-label="仪器示意图占位" role="img">
+            <rect width="300" height="180" style="fill:#fff"/>
+            <circle cx="150" cy="92" r="58" style="fill:none;stroke:#5f7d10" stroke-width="1.8"/>
+            <circle cx="150" cy="92" r="38" style="fill:none;stroke:#e6e7e6" stroke-width="1.4"/>
+            <path d="M150 20v144M78 92h144" style="stroke:#e6e7e6" stroke-width="1.4"/>
+            <path d="M92 148l116-116" style="stroke:#5f7d10" stroke-width="1.4"/>
+            <text x="150" y="173" text-anchor="middle" font-size="11" font-family="sans-serif"
+                  style="fill:#7d838a">仪器示意图（占位）</text>
+          </svg>
+        </span>
+        <figcaption>图片的 align 参数设为右浮动：图跨行占住右侧，文字沿左侧逐行环绕，图结束后正文自动回到整宽。</figcaption>
+      </figure>
+      <p>在数学上，沈括提出<b>隙积术</b>，给出堆积体体积的计算方法，被视为高阶等差级数求和的早期成果；又提出<b>会圆术</b>，用弦长与矢高近似计算弧长。在天文历法上，他主持修订《奉元历》，改进浑仪、景表与浮漏，并主张以节气定月，提出“十二气历”的构想。</p>
+      <p>这些工作的共同点是把测量数据整理成可以递推的算法：先给出可验证的近似，再说明误差来自何处。浑仪、景表、浮漏三件仪器的改造，也都是为了提高观测读数的稳定度。</p>
+
+      <h3 id="s2-2">地理与地质<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <!-- 图片块：align 设为左浮动，文字跨行环绕在它右侧 -->
+      <figure class="figure fig-left">
+        <span class="fig-inner">
+          <svg width="300" height="180" viewBox="0 0 300 180" aria-label="地层示意图占位" role="img">
+            <rect width="300" height="180" style="fill:#fff"/>
+            <path d="M0 66h300M0 106h300M0 140h300" style="stroke:#e6e7e6" stroke-width="1.4"/>
+            <path d="M0 66c56 0 96 24 150 24s94-24 150-24" style="fill:none;stroke:#5f7d10" stroke-width="1.8"/>
+            <circle cx="86" cy="120" r="6" style="fill:none;stroke:#7d838a" stroke-width="1.4"/>
+            <circle cx="212" cy="128" r="6" style="fill:none;stroke:#7d838a" stroke-width="1.4"/>
+            <text x="150" y="172" text-anchor="middle" font-size="11" font-family="sans-serif"
+                  style="fill:#7d838a">地层剖面示意（占位）</text>
+          </svg>
+        </span>
+        <figcaption>图片的 align 参数设为左浮动：图跨行占住左侧，文字沿右侧逐行环绕。</figcaption>
+      </figure>
+      <p>沈括在考察雁荡山时，以流水侵蚀解释山峰的成因；在太行山见到螺蚌化石，据此推断此地曾经临海，进而提出海陆变迁的看法。他还曾以木屑与面糊制作立体地形图，用于军事与水利规划。</p>
+      <p>这类判断依赖的是把眼前的地貌与长期过程联系起来：山形不是一次成形的，化石也不产于本地。用今天的话说，他是在没有地层学与地质年代概念的时代，做了相当大胆的推断。</p>
+
+      <h3 id="s2-3">医药与博物<span class="mw-editsection">[<a href="#">编辑</a>]</span></h3>
+      <p>沈括收集民间验方，编成《良方》，后与苏轼的方书合刊为《苏沈良方》。他对药用植物、矿物与动物也有大量观察记录。“<a href="#">石油</a>”一词即首见于他的著作。</p>
+
+      <h2 id="s3">主要著作<span class="mw-editsection">[<a href="#">编辑</a>]</span></h2>
+
+      <table class="wikitable">
+        <caption>沈括主要著作一览</caption>
+        <thead>
+          <tr><th>书名</th><th>成书年代</th><th>卷数</th><th>主要内容</th><th>存佚</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>梦溪笔谈</td><td>约1088年</td><td>26卷</td><td>笔记体综合性著作，涉及自然科学与人文</td><td>存</td></tr>
+          <tr><td>补笔谈</td><td>约1090年</td><td>3卷</td><td>《梦溪笔谈》的补遗</td><td>存</td></tr>
+          <tr><td>续笔谈</td><td>约1091年</td><td>1卷</td><td>杂记与考辨</td><td>存</td></tr>
+          <tr><td>良方</td><td>约1070年</td><td>15卷</td><td>医方汇集，后与苏轼方书合刊</td><td>残</td></tr>
+          <tr><td>使契丹图抄</td><td>1075年</td><td>—</td><td>出使辽国沿途山川道里与风俗</td><td>佚</td></tr>
+          <tr><td>长兴集</td><td>—</td><td>41卷</td><td>诗文集</td><td>残</td></tr>
+        </tbody>
+      </table>
+
+      <p>下面给出本页面在 <code>content/pages/</code> 目录中对应的数据片段，用以说明「内容即内容块树」的存储形式。这一块由代码块渲染：</p>
+
+      <pre class="code">{
+  <span class="c-key">"title"</span>: <span class="c-str">"沈括"</span>,
+  <span class="c-key">"namespace"</span>: <span class="c-str">"main"</span>,
+  <span class="c-key">"categories"</span>: [<span class="c-str">"北宋官员"</span>, <span class="c-str">"北宋科学家"</span>, <span class="c-str">"杭州人"</span>],
+  <span class="c-key">"blocks"</span>: [
+    { <span class="c-key">"type"</span>: <span class="c-str">"Notice"</span>, <span class="c-key">"params"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"info"</span>, <span class="c-key">"text"</span>: <span class="c-str">"……"</span> } },
+    { <span class="c-key">"type"</span>: <span class="c-str">"Paragraph"</span>, <span class="c-key">"params"</span>: { <span class="c-key">"text"</span>: <span class="c-str">"'''沈括'''（1031年—1095年）……"</span> } },
+    { <span class="c-key">"type"</span>: <span class="c-str">"Infobox"</span>, <span class="c-key">"params"</span>: { <span class="c-key">"name"</span>: <span class="c-str">"沈括"</span>, <span class="c-key">"rows"</span>: [ /* InfoboxRow 列表 */ ] } },
+    { <span class="c-key">"type"</span>: <span class="c-str">"Collapsible"</span>, <span class="c-key">"params"</span>: { <span class="c-key">"title"</span>: <span class="c-str">"边界交涉的一段插曲"</span>, <span class="c-key">"expanded"</span>: true },
+      <span class="c-key">"children"</span>: [ /* Image、Paragraph */ ] }
+  ],
+  <span class="c-key">"raw"</span>: { <span class="c-key">"css"</span>: <span class="c-str">""</span>, <span class="c-key">"js"</span>: <span class="c-str">""</span> }   <span class="c-com">// 页面级裸露修改接口</span>
+}</pre>
+
+      <h2 id="s4">评价<span class="mw-editsection">[<a href="#">编辑</a>]</span></h2>
+
+      <blockquote class="quote">
+        <p class="q-text">予退处林下，深居绝过从，思平日与客言者，时纪一事于笔，则若有所晤言，萧然移日。所与谈者，唯笔砚而已，谓之《笔谈》。</p>
+        <span class="q-src">沈括，《梦溪笔谈》自序</span>
+      </blockquote>
+
+      <p>后世对沈括的评价多集中于其博学与实证精神。《宋史》称他“博学善文，于天文、方志、律历、音乐、医药、卜算无所不通”。也有研究者指出，他在政务与军事上的判断并非总是稳妥，永乐城之败即是一例。</p>
+
+      <div class="notice notice-warn">
+        <span class="n-icon">!</span>
+        <div class="n-body">
+          <p>本条目部分内容依据二手研究整理，具体年代与职官名称请以原始文献为准。样板页不追求史实完整。</p>
+        </div>
+      </div>
+
+      <h2 id="s5">参见<span class="mw-editsection">[<a href="#">编辑</a>]</span></h2>
+      <ul>
+        <li><a href="#">梦溪笔谈</a></li>
+        <li><a href="#">北宋科技</a></li>
+        <li><a href="#">活字印刷术</a></li>
+        <li><a href="#">苏颂</a>（同时代科学家，主持制造水运仪象台）</li>
+        <li><a href="#" class="new">宋辽边界交涉</a>（尚未创建，用于演示红链样式）</li>
+      </ul>
+
+      <nav class="navbox">
+        <div class="nv-title">沈括 <span class="toggle">[<a href="#">隐藏</a>]</span></div>
+        <div class="nv-row">
+          <div class="nv-th">著作</div>
+          <div class="nv-td"><a href="#">梦溪笔谈</a>、<a href="#">补笔谈</a>、<a href="#">续笔谈</a>、<a href="#">苏沈良方</a>、<a href="#">长兴集</a></div>
+        </div>
+        <div class="nv-row">
+          <div class="nv-th">学术</div>
+          <div class="nv-td"><a href="#">隙积术</a>、<a href="#">会圆术</a>、<a href="#">十二气历</a>、<a href="#">奉元历</a></div>
+        </div>
+        <div class="nv-row">
+          <div class="nv-th">相关人物</div>
+          <div class="nv-td"><a href="#">王安石</a>、<a href="#">苏轼</a>、<a href="#">毕昇</a>、<a href="#">苏颂</a></div>
+        </div>
+      </nav>
+
+      <div class="catlinks">
+        <b>分类</b>
+        <a href="#">北宋官员</a><span class="cat-sep">、</span><a href="#">北宋科学家</a><span class="cat-sep">、</span><a href="#">杭州人</a><span class="cat-sep">、</span><a href="#">1031年出生</a><span class="cat-sep">、</span><a href="#">1095年逝世</a>
+      </div>
+
+      <footer class="mw-footer">
+        <p class="last-edit">本页面最后编辑于 2026年2月14日 (星期六) 15:32。历史记录见 <a href="#" class="ext" title="在 GitHub 上查看该文件的提交历史">GitHub 提交历史</a>。</p>
+        <ul>
+          <li><a href="#">隐私政策</a></li>
+          <li><a href="#">关于示例Wiki</a></li>
+          <li><a href="#">免责声明</a></li>
+          <li><a href="#">移动版视图</a></li>
+        </ul>
+        <p style="margin:.2em 0 0">内容采用 CC BY-SA 4.0 许可协议。本站为静态站点，无服务器后端。</p>
+      </footer>
+
+    </div><!-- /mw-parser-output -->
+  </main>
+
+  <!-- ===================== 右栏：站点级工具 ===================== -->
+  <aside class="tools">
+    <h3>工具</h3>
+    <ul>
+      <li><a href="#">链入页面</a></li>
+      <li><a href="#">相关更改</a></li>
+      <li><a href="#">页面信息</a></li>
+      <li><a href="#">可打印版</a></li>
+      <li><a href="#">引用本页</a></li>
+      <li><a href="#" class="ext" title="在 GitHub 上查看该文件的提交历史">查看历史</a></li>
+    </ul>
+    <h3>分类</h3>
+    <ul>
+      <li><a href="#">北宋官员</a></li>
+      <li><a href="#">北宋科学家</a></li>
+      <li><a href="#">杭州人</a></li>
+      <li><a href="#">1031年出生</a></li>
+      <li><a href="#">1095年逝世</a></li>
+    </ul>
+    <h3>语言</h3>
+    <ul><li><a href="#" class="ext">English</a></li></ul>
+  </aside>
+
+</div>
+
+<!-- ===================== 原型说明面板 ===================== -->
+<aside class="notes" id="notes" hidden>
+  <header>
+    <span><span class="dot"></span>改版确认清单（v3）</span>
+    <button type="button" id="notes-close">关闭</button>
+  </header>
+  <ol>
+    <li><b>链接已改黄绿色</b>：正文链接用深橄榄青柠 <code>#5f7d10</code>（对白底 4.7:1，保证长文可读），悬停仍是亮黄绿浅底；红链保留，用来标记尚未创建的条目。<span class="tag">现在够醒目吗？想更亮一档也可以做，但长文可读性会下降。</span></li>
+    <li><b>圆角统一 5px</b>：全部盒体、搜索框、按钮、说明面板。<span class="tag">合适吗？</span></li>
+    <li><b>只保留 2022 皮肤</b>：2010 经典已整份删除，标题全部无衬线，皮肤切换开关也去掉了。</li>
+    <li><b>讨论标签已删除</b>：标签行现在只有 页面 与 阅读 / 编辑 / 查看历史。</li>
+    <li><b>信息框回到右侧</b>：右侧浮动列，宽 21em，图在上、字段表在下，正文段落环绕并自动收窄到它左边。<span class="tag">位置和宽度可以吗？</span></li>
+    <li><b>侧边栏块同样回到右侧</b>，叠在信息框下方，两块共用同一条右侧列。</li>
+    <li><b>让位规则这次收紧了</b>：凡是有边框、底色或自带右侧浮动标记的块——折叠框、提示框、引用、代码块、图片、表格、导航盒、分类条、页脚，以及全部章节标题——一律清除右侧浮动，所以它们的边框和底色永远不会横穿右侧列，也不会被压住或切断；<b>[编辑]</b> 小标因此也不会贴到右侧列上。只有纯文本段落与列表继续环绕。窗口窄于 760 像素时右侧列落到正文上方并恢复整宽。<span class="tag">还有哪一处你觉得该让位但还在环绕？</span></li>
+    <li><b>图片三种对齐都有实物</b>：右浮动在「数学与天文」，左浮动在「地理与地质」，随流居中在「边界交涉的一段插曲」折叠框内，图注里写了各自的效果。<span class="tag">这就是你说的跨行摆在左右吧？</span></li>
+    <li><b>查看历史</b>：标签行与工具里两个入口都带外链标记，点出去就是 GitHub 上该文件的提交历史，站内不做历史页与 diff 视图。</li>
+    <li><b>编辑器样板已加入</b>：<code>editor-sample.html</code>，左栏是一个内容块篮子，把块拖进中间画布即可成页，可拖动排序、可嵌套、可填参数。<span class="tag">请重点确认那一版的手感。</span></li>
+    <li><b>合规项</b>：无 emoji、无中点分隔符、无外部字体与图标库，所有图形均为 CSS 或内联 SVG 绘制。</li>
+  </ol>
+</aside>
+
+<script>
+(function(){
+  /* --- 目录：由正文标题生成，放在左栏 --- */
+  var heads = Array.prototype.slice.call(
+    document.querySelectorAll('.mw-parser-output h2[id], .mw-parser-output h3[id]')
+  );
+  var counters = [0, 0];
+  var items = heads.map(function(h){
+    var lv = h.tagName === 'H2' ? 2 : 3;
+    var num;
+    if (lv === 2){ counters[0]++; counters[1] = 0; num = counters[0] + ''; }
+    else { counters[1]++; num = counters[0] + '.' + counters[1]; }
+    return { id: h.id, num: num, label: h.textContent.replace(/\[编辑\]/g, '').trim(), lv: lv };
+  });
+
+  var target = document.querySelector('.toc--side');
+  var head = document.createElement('div');
+  head.className = 'toc-head';
+  head.innerHTML = '目录 <span class="toggle">[<a href="#">隐藏</a>]</span>';
+  var ul = document.createElement('ul');
+  items.forEach(function(it){
+    var li = document.createElement('li');
+    if (it.lv === 3) li.className = 'lv3';
+    var a = document.createElement('a');
+    a.href = '#' + it.id;
+    a.innerHTML = '<span class="num">' + it.num + '</span>' + it.label;
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+  target.appendChild(head);
+  target.appendChild(ul);
+
+  /* --- 说明面板开关 --- */
+  var notes = document.getElementById('notes');
+  document.getElementById('notes-toggle').addEventListener('click', function(){
+    notes.hidden = !notes.hidden;
+  });
+  document.getElementById('notes-close').addEventListener('click', function(){
+    notes.hidden = true;
+  });
+})();
+</script>
+</body>
+</html>

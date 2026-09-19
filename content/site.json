@@ -1,0 +1,33 @@
+{
+  "name": "OrganxyWiki",
+  "tagline": "自由的知识条目",
+  "logo": "",
+  "base": "/OrganxyWiki/",
+  "editorBase": "/OrganxyWiki/editor/",
+  "repository": {
+    "owner": "HakuaRi",
+    "repo": "OrganxyWiki",
+    "branch": "main"
+  },
+  "navigation": [
+    { "label": "首页", "href": "/" },
+    { "label": "最近更改", "href": "/recent-changes" },
+    { "label": "随机页面", "href": "/random" },
+    { "label": "全部分类", "href": "/categories" }
+  ],
+  "tools": [
+    { "label": "链入页面", "href": "/tools/backlinks" },
+    { "label": "相关更改", "href": "/tools/recent" },
+    { "label": "页面信息", "href": "/tools/page-info" },
+    { "label": "可打印版", "href": "/tools/print" },
+    { "label": "引用本页", "href": "/tools/cite" }
+  ],
+  "footer": [
+    { "label": "隐私政策", "href": "/privacy" },
+    { "label": "关于OrganxyWiki", "href": "/about" },
+    { "label": "免责声明", "href": "/disclaimer" },
+    { "label": "移动版视图", "href": "/mobile" }
+  ],
+  "license": "内容采用 CC BY-SA 4.0 许可协议。本站为静态站点，无服务器后端。",
+  "skin": "vector-2022"
+}

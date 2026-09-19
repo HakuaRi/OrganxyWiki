@@ -1,0 +1,18 @@
+{
+  "name": "@wiki/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "展示系统与编辑系统共用的类型、Schema、富文本解析器、渲染组件与样式",
+  "exports": {
+    ".": "./index.ts",
+    "./styles/*": "./styles/*",
+    "./types/*": "./types/*",
+    "./schema/*": "./schema/*",
+    "./richtext/*": "./richtext/*"
+  },
+  "types": "./index.ts",
+  "dependencies": {
+    "vue": "^3.5.0"
+  }
+}

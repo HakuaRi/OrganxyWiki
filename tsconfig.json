@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "shared/**/*.ts",
+    "public-site/src/**/*.ts",
+    "public-site/src/**/*.vue",
+    "editor/src/**/*.ts",
+    "editor/src/**/*.vue",
+    "scripts/**/*.ts"
+  ]
+}

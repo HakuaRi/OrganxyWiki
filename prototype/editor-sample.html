@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>编辑器样板 - 示例Wiki（编辑系统）</title>
+<!--
+  ============================================================================
+  编辑系统样板（静态原型），对应 plan.md 第四节
+  核心：模块化 = 像选菜一样，把左栏篮子里的内容块拖到中间空页面里成页。
+        （拖拽排序 / 拖进容器块嵌套 / 点块填参数 / 结构视图与成稿预览切换）
+  与展示系统样板共用同一套设计变量与渲染样式。无框架、无外部依赖、无 emoji。
+  ============================================================================
+-->
+<style>
+:root{
+  --ink:#24272a; --ink-soft:#5c6268; --ink-faint:#7d838a;
+  --line:#e6e7e6; --line-soft:#efefee;
+  --surface:#fff; --surface-2:#fafaf9; --surface-3:#f4f5f4;
+  --accent:#c8ef4a; --accent-soft:#eff9cd; --accent-ink:#3f4a12;
+  --link:#5f7d10; --link-hover:#41600a; --link-new:#a35a52;
+  --warn:#c9a86a; --danger:#b4644a;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --radius:5px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--surface-2);color:var(--ink);
+     font-family:var(--font-sans);font-size:14px;line-height:1.65;
+     padding-top:29px}          /* 给顶部固定控制条让位，否则顶栏会被它挡住 */
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline;color:var(--link-hover)}
+button{font:inherit}
+.ico{flex:0 0 auto;vertical-align:-2px;fill:none;stroke:currentColor;
+     stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ico-lead{margin-right:.35em}
+h2,h3,h4{margin:0}
+ul{margin:0}
+
+/* ===== 顶部原型控制条 ===== */
+.proto-bar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
+  gap:.6em;flex-wrap:wrap;padding:.3em .9em;background:var(--surface-3);color:var(--ink-soft);
+  border-bottom:1px solid var(--line);font-size:12px}
+.proto-bar b{color:var(--ink)}
+.proto-bar .spacer{flex:1}
+.proto-bar .hint{color:var(--ink-faint)}
+.proto-bar a,.proto-bar button{color:var(--ink-soft);background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:.22em .75em;cursor:pointer;text-decoration:none;font:inherit}
+.proto-bar a:hover,.proto-bar button:hover{background:var(--accent-soft);color:var(--ink);text-decoration:none}
+
+/* ===== 顶栏 ===== */
+.ed-top{position:sticky;top:29px;z-index:60;display:flex;align-items:center;gap:1.2em;
+  padding:.6em 1.2em;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ed-brand{display:flex;align-items:center;gap:.55em}
+.ed-brand .wordmark{font-weight:700;font-size:1.15em;line-height:1.1}
+.ed-brand .tag{display:block;font-size:.7em;color:var(--ink-faint);font-weight:400}
+.ed-page{display:flex;align-items:center;gap:.5em;font-size:.9em}
+.ed-page select,.ed-page input{font:inherit;font-size:.95em;color:var(--ink);background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius);padding:.25em .5em;outline:0}
+.ed-page select:focus,.ed-page input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ed-page .tag{color:var(--ink-faint);font-size:.9em}
+.ed-top .spacer{flex:1}
+.ed-top .actions{display:flex;align-items:center;gap:.6em;font-size:.9em}
+.btn{display:inline-flex;align-items:center;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:.3em .8em;cursor:pointer;color:var(--ink-soft)}
+.btn:hover{background:var(--accent-soft);color:var(--ink)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn-primary:hover{background:#bde63c;color:var(--accent-ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff}
+.seg button{display:inline-flex;align-items:center;border:0;background:transparent;
+  padding:.3em .8em;cursor:pointer;color:var(--ink-soft)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+
+/* ===== 三栏工作区 ===== */
+.ed-body{display:grid;grid-template-columns:255px minmax(0,1fr) 335px;gap:1.2em;
+  max-width:1720px;margin:0 auto;padding:1.2em}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:.6em;
+  padding:.55em .8em;border-bottom:1px solid var(--line-soft);background:var(--surface-3);
+  border-radius:var(--radius) var(--radius) 0 0}
+.panel-head b{font-size:.95em;display:flex;align-items:center;gap:.4em}
+.panel-head .sub{color:var(--ink-faint);font-size:.8em;font-weight:400}
+.panel-body{padding:.8em}
+
+/* ===== 左栏：内容块篮子 ===== */
+.basket .filter{width:100%;font:inherit;font-size:.9em;color:var(--ink);background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius);padding:.3em .55em;outline:0;margin-bottom:.7em}
+.basket .filter:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.basket-group{margin:0 0 1em}
+.basket-group h4{font-size:.78em;font-weight:700;color:var(--ink-faint);margin:0 0 .4em;
+  letter-spacing:.03em}
+.chips{display:flex;flex-direction:column;gap:.35em}
+.block-chip{display:flex;align-items:center;gap:.55em;padding:.42em .6em;background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius);cursor:grab;user-select:none}
+.block-chip:hover{background:var(--accent-soft);border-color:var(--accent)}
+.block-chip:active{cursor:grabbing}
+.block-chip .icon{flex:0 0 auto;min-width:1.9em;height:1.9em;display:flex;align-items:center;
+  justify-content:center;background:var(--surface-3);border-radius:var(--radius);
+  font-family:var(--font-mono);font-size:.78em;color:var(--ink-soft);padding:0 .3em}
+.block-chip .names{min-width:0}
+.block-chip .zh{font-size:.92em}
+.block-chip .en{display:block;font-family:var(--font-mono);font-size:.7em;color:var(--ink-faint)}
+.block-chip.danger{border-color:#e8d3cc}
+.block-chip.danger .icon{background:#f7ece8;color:var(--danger)}
+.basket-hint{margin:.6em 0 0;font-size:.78em;color:var(--ink-faint);line-height:1.6}
+
+/* ===== 中栏：画布 ===== */
+.canvas .canvas-head{display:flex;align-items:center;gap:.8em;flex-wrap:wrap;
+  padding:.55em .8em;border-bottom:1px solid var(--line-soft);background:var(--surface-3);
+  border-radius:var(--radius) var(--radius) 0 0}
+.canvas .canvas-head .path{font-family:var(--font-mono);font-size:.85em;color:var(--ink-soft)}
+.canvas .canvas-head .count{font-size:.8em;color:var(--ink-faint)}
+.canvas .canvas-head .spacer{flex:1}
+.canvas-body{padding:1em;min-height:420px}
+.canvas-body.dragging .empty-zone{visibility:hidden}
+
+.children-list{display:flex;flex-direction:column;gap:.5em;min-height:1.6em}
+.children-list.nested{margin:.55em 0 0;padding:.55em .55em .55em .7em;
+  border-left:2px dashed var(--line);border-radius:0 var(--radius) var(--radius) 0;background:#fdfdfc}
+
+.block-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
+.block-card.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.bc-head{display:flex;align-items:center;gap:.5em;padding:.4em .6em;background:var(--surface-3);
+  border-radius:var(--radius) var(--radius) 0 0;cursor:grab}
+.bc-head:active{cursor:grabbing}
+.bc-handle{flex:0 0 auto;display:flex;align-items:center;color:var(--ink-faint);opacity:.85}
+.bc-icon{flex:0 0 auto;min-width:1.8em;height:1.8em;display:flex;align-items:center;justify-content:center;
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  font-family:var(--font-mono);font-size:.75em;color:var(--ink-soft);padding:0 .3em}
+.bc-type{font-family:var(--font-mono);font-size:.8em;color:var(--ink-soft)}
+.bc-label{font-size:.85em;color:var(--ink-faint)}
+.bc-actions{margin-left:auto;display:flex;gap:.25em}
+.bc-actions button{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;
+  border-radius:var(--radius);padding:.2em .38em;color:var(--ink-soft);cursor:pointer}
+.bc-actions button:hover{background:var(--accent-soft);color:var(--ink)}
+.bc-actions button[data-act="del"]:hover{background:#f7ece8;color:var(--danger);border-color:#e8d3cc}
+.bc-summary{padding:.45em .65em;font-size:.85em;color:var(--ink-soft);word-break:break-word}
+.bc-summary .bc-empty{color:var(--ink-faint);font-style:italic}
+.children-list.nested .block-card{margin:0}
+
+.empty-zone{border:2px dashed var(--line);border-radius:var(--radius);padding:2.6em 1.2em;
+  text-align:center;color:var(--ink-faint);font-size:.9em;line-height:1.8;background:#fdfdfc}
+.empty-zone.small{padding:1em .8em;font-size:.82em;margin:.1em 0}
+.empty-zone .ez-ico{display:block;margin:0 auto .55em;color:var(--ink-faint)}
+.empty-zone .ez-inline{color:var(--ink-faint);margin-right:.35em}
+.ins-line{height:3px;border-radius:2px;background:var(--accent);margin:.1em 0}
+
+/* ===== 右栏：属性表单 ===== */
+.inspector .ins-head{display:flex;align-items:center;gap:.5em;padding:.55em .8em;
+  border-bottom:1px solid var(--line-soft);background:var(--surface-3);font-size:.9em;
+  border-radius:var(--radius) var(--radius) 0 0}
+.inspector .ins-head code{font-family:var(--font-mono);font-size:.8em;color:var(--ink-faint);margin-left:auto}
+.fields{padding:.8em}
+.field{display:block;margin:0 0 .9em}
+.field .flabel{display:block;font-size:.82em;color:var(--ink-soft);margin-bottom:.25em}
+.field .req{font-style:normal;color:var(--danger);font-size:.85em}
+.field .fhint{display:block;font-size:.75em;color:var(--ink-faint);margin-top:.25em;line-height:1.55}
+.field input[type=text],.field textarea,.field select{width:100%;font:inherit;font-size:.9em;
+  color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:.35em .5em;outline:0;resize:vertical}
+.field input[type=text]:focus,.field textarea:focus,.field select:focus{
+  border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.field textarea{font-family:var(--font-mono);font-size:.83em;line-height:1.6}
+.field .check{display:flex;align-items:center;gap:.45em;font-size:.9em}
+.field .with-btn{display:flex;gap:.4em}
+.field .with-btn input{flex:1}
+.rows-editor{border:1px solid var(--line);border-radius:var(--radius);padding:.5em;background:var(--surface-2)}
+.row-item{display:flex;gap:.35em;margin-bottom:.35em;align-items:center}
+.row-item input{flex:1;font:inherit;font-size:.85em;border:1px solid var(--line);
+  border-radius:var(--radius);padding:.25em .4em;outline:0;background:#fff}
+.row-item input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.row-item .row-del,.rows-editor .row-add{display:inline-flex;align-items:center;
+  border:1px solid var(--line);background:#fff;
+  border-radius:var(--radius);padding:.2em .5em;color:var(--ink-soft);cursor:pointer}
+.row-item .row-del:hover{background:#f7ece8;color:var(--danger);border-color:#e8d3cc}
+.rows-editor .row-add{margin-top:.2em;width:100%;justify-content:center}
+.rows-editor .row-add:hover{background:var(--accent-soft);color:var(--ink)}
+.advanced{border-top:1px solid var(--line-soft);padding:.7em .8em}
+.advanced>summary{cursor:pointer;font-size:.85em;color:var(--ink-soft);font-weight:700}
+.advanced>summary:hover{color:var(--ink)}
+.advanced[open]>summary{margin-bottom:.7em}
+.ins-note{margin:.2em 0 .8em;font-size:.78em;color:var(--ink-faint);line-height:1.65}
+.ins-empty{padding:1.2em .9em;font-size:.88em;color:var(--ink-faint);line-height:1.8}
+
+/* ===== 成稿预览（与展示系统同一套样式） ===== */
+.pv-body .pv-block{position:relative;border-radius:var(--radius)}
+.pv-body .pv-block:hover{box-shadow:0 0 0 2px var(--accent-soft)}
+.pv-body .pv-block::after{content:attr(data-type);position:absolute;top:0;right:0;
+  font-family:var(--font-mono);font-size:.68em;color:var(--ink-faint);background:var(--surface-3);
+  border-radius:0 var(--radius) 0 var(--radius);padding:0 .35em;opacity:0}
+.pv-body .pv-block:hover::after{opacity:1}
+.pv-body h2{font-size:1.4em;font-weight:700;margin:1.3em 0 .45em;padding-bottom:.2em;
+  border-bottom:1px solid var(--line)}
+.pv-body h3{font-size:1.13em;font-weight:700;margin:1.1em 0 .3em}
+.pv-body h4{font-size:1.02em;font-weight:700;margin:.9em 0 .25em}
+.pv-body p{margin:.55em 0 .9em}
+.pv-body a{color:var(--link)}
+.pv-body ul{padding-left:1.8em;margin:.4em 0 .9em}
+.pv-body .notice{display:flex;gap:.7em;align-items:flex-start;border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:var(--radius);background:var(--surface-2);
+  margin:1em 0;padding:.6em .85em;font-size:.95em}
+.pv-body .notice .n-icon{flex:0 0 auto;width:1.3em;height:1.3em;border-radius:var(--radius);
+  font-weight:700;font-size:.9em;line-height:1.3em;text-align:center;margin-top:.2em;
+  background:var(--accent);color:var(--accent-ink)}
+.pv-body .notice-warn{border-left-color:var(--warn)}
+.pv-body .notice-warn .n-icon{background:var(--warn);color:#3d3016}
+.pv-body .notice p{margin:.15em 0}
+.pv-body .quote{margin:1em 0 1.2em;padding:.6em 1.1em;border-left:2px solid var(--line);
+  background:var(--surface-2);border-radius:0 var(--radius) var(--radius) 0}
+.pv-body .quote .q-src{display:block;text-align:right;font-size:.86em;color:var(--ink-faint);margin-top:.35em}
+.pv-body .code{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:.75em .95em;margin:.9em 0 1.2em;overflow:auto;font-family:var(--font-mono);
+  font-size:.83em;line-height:1.55;white-space:pre;color:var(--ink-soft)}
+.pv-body .collapsible{border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface-2);margin:1em 0;font-size:.96em}
+.pv-body .collapsible>summary{list-style:none;cursor:pointer;background:var(--surface-3);
+  padding:.45em .85em;font-weight:700;border-radius:var(--radius)}
+.pv-body .collapsible>summary::-webkit-details-marker{display:none}
+.pv-body .collapsible .col-body{padding:.75em .9em;background:#fff;
+  border-top:1px solid var(--line-soft);border-radius:0 0 var(--radius) var(--radius)}
+.pv-body .collapsible .col-body>*:first-child{margin-top:0}
+.pv-body .infobox{float:right;clear:right;width:20em;max-width:100%;
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface-2);margin:.2em 0 1.2em 1.4em;font-size:.92em}
+.pv-body .infobox .ib-head{padding:.55em .9em;background:var(--surface-3);text-align:center;
+  border-radius:var(--radius) var(--radius) 0 0;border-bottom:1px solid var(--line-soft)}
+.pv-body .infobox .ib-title{font-weight:700}
+.pv-body .infobox .ib-sub{color:var(--ink-faint);font-size:.88em}
+.pv-body .infobox .ib-body{padding:.75em}
+.pv-body .infobox .ib-figure{margin:0 0 .7em;border:1px solid var(--line);text-align:center;
+  border-radius:var(--radius);background:#fff;padding:.3em}
+.pv-body .infobox figcaption{font-size:.82em;color:var(--ink-faint);padding:.3em .2em .1em}
+.pv-body .infobox .ib-rows{width:100%;border-collapse:collapse}
+.pv-body .infobox .ib-rows th{width:5.4em;text-align:left;font-weight:700;color:var(--ink-soft);
+  padding:.3em .5em .3em 0;vertical-align:top}
+.pv-body .infobox .ib-rows td{padding:.3em 0;vertical-align:top}
+.pv-body .infobox .ib-rows tr+tr th,.pv-body .infobox .ib-rows tr+tr td{border-top:1px solid var(--line-soft)}
+.pv-body .sidebar-tpl{float:right;clear:right;width:20em;max-width:100%;
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface-2);margin:0 0 1.2em 1.4em;font-size:.92em}
+.pv-body .sidebar-tpl .st-title{padding:.55em .9em;background:var(--surface-3);font-weight:700;text-align:center;
+  border-radius:var(--radius) var(--radius) 0 0;border-bottom:1px solid var(--line-soft)}
+.pv-body .sidebar-tpl .st-body{display:block}
+.pv-body .sidebar-tpl .st-block{padding:.6em .85em;background:#fff}
+.pv-body .sidebar-tpl .st-block+.st-block{border-top:1px solid var(--line-soft)}
+.pv-body .navbox{border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface-2);font-size:.88em;margin:1.4em 0 1em}
+.pv-body .navbox .nv-title{text-align:center;font-weight:700;padding:.45em;background:var(--surface-3);
+  border-radius:var(--radius) var(--radius) 0 0}
+.pv-body .navbox .nv-td{padding:.45em .85em;background:#fff;border-top:1px solid var(--line-soft)}
+.pv-body .wikitable{border-collapse:collapse;width:100%;margin:.9em 0 1.2em;font-size:.92em;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pv-body .wikitable th,.pv-body .wikitable td{padding:.42em .7em;text-align:left;vertical-align:top;
+  border-bottom:1px solid var(--line-soft)}
+.pv-body .wikitable thead th{background:var(--surface-3);color:var(--ink-soft);
+  border-bottom:1px solid var(--line)}
+.pv-body{display:flow-root}
+.pv-body .figure{margin:1em 0;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface-2);padding:.35em;max-width:420px}
+.pv-body .figure.fig-right{float:right;clear:right;margin:.3em 0 1em 1.4em;max-width:320px}
+.pv-body .figure.fig-left{float:left;clear:left;margin:.3em 1.4em 1em 0;max-width:320px}
+.pv-body .figure figcaption{font-size:.84em;color:var(--ink-faint);padding:.4em .3em .15em}
+.pv-body .wikitable,.pv-body .navbox,.pv-body .notice{clear:right}
+.pv-body .rawhtml{border:1px solid #e8d3cc;border-radius:var(--radius);background:#fdf9f7;
+  padding:.5em .7em;margin:1em 0}
+.pv-body .rawhtml .rawhtml-tag{font-size:.78em;color:var(--danger);margin-bottom:.3em}
+
+/* ===== 提示条 ===== */
+.toast{position:fixed;left:50%;bottom:1.4em;transform:translate(-50%,1.5em);z-index:120;
+  background:#24272a;color:#fff;border-radius:var(--radius);padding:.5em 1em;font-size:.85em;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.notes{position:fixed;right:1em;bottom:1em;z-index:90;width:30em;max-width:calc(100vw - 2em);
+  max-height:70vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:0 6px 24px rgba(36,39,42,.10);font-size:12.5px;line-height:1.65}
+.notes[hidden]{display:none}
+.notes header{display:flex;align-items:center;justify-content:space-between;gap:1em;
+  background:var(--surface-3);border-bottom:1px solid var(--line);padding:.45em .8em;font-weight:700;
+  border-radius:var(--radius) var(--radius) 0 0}
+.notes header button{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:.1em .6em;cursor:pointer;color:var(--ink-soft);font:inherit}
+.notes header button:hover{background:var(--accent-soft)}
+.notes header .dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;
+  background:var(--accent);margin-right:.45em;vertical-align:middle}
+.notes ol{margin:0;padding:.75em 1em .95em 2.4em}
+.notes li{margin:.45em 0}
+.notes .tag{color:var(--ink-faint)}
+.notes code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-3);
+  border-radius:var(--radius);padding:.05em .28em}
+
+@media (max-width:1240px){
+  .ed-body{grid-template-columns:1fr}
+  .basket{order:2}
+  .inspector{order:3}
+  .canvas{order:1}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== 原型控制条 ===================== -->
+<div class="proto-bar">
+  <b>样板控制</b>
+  <span>编辑系统</span>
+  <span class="spacer"></span>
+  <span class="hint">把左栏篮子里的内容块拖进中间画布即可成页</span>
+  <a href="style-sample.html">打开展示样板</a>
+  <button type="button" id="notes-toggle">这一版要看什么</button>
+</div>
+
+<!-- ===================== 顶栏 ===================== -->
+<header class="ed-top">
+  <div class="ed-brand">
+    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x=".75" y=".75" width="30.5" height="30.5" rx="5" style="fill:none;stroke:#e6e7e6"/>
+      <path d="M8 23c3-8 6-12 8-12s5 4 8 12" style="fill:none;stroke:#5f7d10" stroke-width="1.8"/>
+      <path d="M5 25h22" style="stroke:#7d838a" stroke-width="1.2"/>
+    </svg>
+    <span>
+      <span class="wordmark">示例Wiki</span>
+      <span class="tag">编辑系统</span>
+    </span>
+  </div>
+
+  <div class="ed-page">
+    <span class="tag">正在编辑</span>
+    <svg class="ico" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"/></svg>
+    <select id="page-select">
+      <option value="main/沈括">main/沈括</option>
+      <option value="main/首页">main/首页</option>
+      <option value="main/新页面">main/新页面（空页面）</option>
+    </select>
+    <span class="tag" id="page-state">已存在</span>
+  </div>
+
+  <span class="spacer"></span>
+
+  <div class="actions">
+    <span class="seg" role="group" aria-label="视图">
+      <button type="button" id="view-tree" aria-pressed="true"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4h3M4 8h3M4 12h3M9 8h3.5M7 4v8"/></svg>结构视图</button>
+      <button type="button" id="view-preview" aria-pressed="false"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 4.5 8 4.5 14.5 8 14.5 8 12 11.5 8 11.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.7"/></svg>成稿预览</button>
+    </span>
+    <button type="button" class="btn" id="btn-sample"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l1.3 3.2 3.2 1.3-3.2 1.3L8 11.5 6.7 8.3 3.5 7l3.2-1.3z"/></svg>载入示例</button>
+    <button type="button" class="btn" id="btn-clear"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>清空</button>
+    <button type="button" class="btn-primary btn" id="btn-save"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V3M5 6l3-3 3 3M3 13h10"/></svg>保存到 GitHub</button>
+    <a href="#" class="btn" id="btn-logout"><svg class="ico ico-lead" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5H3.5v9H6M9.5 5.5L12 8l-2.5 2.5M11.8 8H6.5"/></svg>退出登录</a>
+  </div>
+</header>
+
+<!-- ===================== 工作区 ===================== -->
+<div class="ed-body">
+
+  <!-- ---------- 左栏：内容块篮子 ---------- -->
+  <section class="panel basket">
+    <div class="panel-head">
+      <b><svg class="ico" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6h11l-1.3 7H3.8zM5.8 6L7 3M10.2 6L9 3"/></svg>内容块篮子</b>
+      <span class="sub">拖到画布</span>
+    </div>
+    <div class="panel-body">
+      <input type="search" class="filter" id="filter" placeholder="筛选内容块">
+      <div id="basket-groups"></div>
+      <p class="basket-hint">
+        按住任意一块拖进中间画布即可放入页面，落点会显示一条亮黄绿插入线。
+        拖到已有块的上半或下半决定插在它前面还是后面。
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------- 中栏：画布 ---------- -->
+  <section class="panel canvas">
+    <div class="canvas-head">
+      <span class="path" id="canvas-path">content/pages/main/沈括.json</span>
+      <span class="count" id="canvas-count"></span>
+      <span class="spacer"></span>
+      <span class="count"><svg class="ico ico-lead" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4.5h5M5.5 8h5M5.5 11.5h5"/></svg>拖动块可排序，拖进虚线区可嵌套</span>
+    </div>
+    <div class="canvas-body" id="canvas-body"></div>
+  </section>
+
+  <!-- ---------- 右栏：属性表单 ---------- -->
+  <section class="panel inspector">
+    <div class="panel-head">
+      <b><svg class="ico" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5.5h10M3 10.5h10M6.2 3.8v3.4M9.8 8.8v3.4"/></svg>块属性</b>
+      <span class="sub">由 Schema 自动生成</span>
+    </div>
+    <div id="inspector"></div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== 说明面板 ===================== -->
+<aside class="notes" id="notes" hidden>
+  <header>
+    <span><span class="dot"></span>这一版要看什么</span>
+    <button type="button" id="notes-close">关闭</button>
+  </header>
+  <ol>
+    <li><b>选菜式模块化</b>：左栏是一篮内容块，按 文本 / 结构 / 媒体 / 数据 / 高级 分组。按住块拖进中间画布，落点会显示一条亮黄绿插入线，松手即放入。<span class="tag">这就是你说的「像选菜一样」吗？手感对不对？</span></li>
+    <li><b>空页面起步</b>：选中 <code>main/新页面</code> 或点「清空」，画布就是一个空页面的虚线框，从零开始拖。<span class="tag">要不要默认就打开空页面？</span></li>
+    <li><b>拖动排序</b>：已放入的块也能直接拖动改顺序，拖到某个块的上下半区决定插前还是插后；也可以点块上的 上移 / 下移。</li>
+    <li><b>嵌套</b>：把块拖进折叠框或侧边栏内部的虚线区，就成为它的子块；不允许把块拖进自己的子孙里（会被拒绝）。<span class="tag">嵌套层级需要限制深度吗？</span></li>
+    <li><b>点块填参数</b>：右栏表单完全由块的 Schema 生成，含 文本 / 多行文本 / 下拉 / 开关 / 图片 / 行列表（信息框的信息行可增删）。<span class="tag">表单密度和字段顺序合适吗？</span></li>
+    <li><b>裸露修改接口</b>：表单底部「高级（裸露修改）」默认折叠，里面是这个块专属的 <code>_raw.css</code> 与 <code>_raw.js</code>。</li>
+    <li><b>结构视图 / 成稿预览</b>：右上角可切换。预览用的是和展示系统同一套渲染样式，所见即所得。<span class="tag">预览要并排常显，还是这样切换就够？</span></li>
+    <li><b>高级块</b>：篮子里最后一个是自定义 HTML，用暖色标出，属于危险块，预览中不执行、只显示源码。</li>
+    <li><b>这一版还没做的</b>：GitHub 登录与真实提交（保存按钮目前只弹提示）、图片真实上传、页面列表与删除、右侧预览的滚动同步、撤销重做。<span class="tag">哪些要优先接上？</span></li>
+    <li><b>图标</b>：编辑器用了一套内联 SVG 图标（块类型、上移下移删除、保存、预览、上传等），不引任何外部图标库、全部跟随文字颜色。展示系统按你的要求一个图标都不加。<span class="tag">图标风格（细线、方头、1.4 描边）可以吗？</span></li>
+  </ol>
+</aside>
+
+<script>
+/* ============================================================
+   1. Schema：块类型定义（编辑器据此生成表单，展示系统据此渲染）
+   ============================================================ */
+var SCHEMA = {
+  Paragraph:{label:'段落', group:'文本', icon:'P', fields:[
+    {key:'text', label:'正文', type:'richtext', required:true}
+  ]},
+  Heading:{label:'章节标题', group:'文本', icon:'H', fields:[
+    {key:'level', label:'层级', type:'select', options:['2','3','4'], def:'2'},
+    {key:'text', label:'标题文字', type:'text', required:true}
+  ]},
+  Quote:{label:'引用', group:'文本', icon:'Q', fields:[
+    {key:'text', label:'引文', type:'richtext'},
+    {key:'source', label:'出处', type:'text'}
+  ]},
+  CodeBlock:{label:'代码块', group:'文本', icon:'{}', fields:[
+    {key:'language', label:'语言', type:'text', def:'json'},
+    {key:'code', label:'代码', type:'code'}
+  ]},
+
+  Infobox:{label:'信息框', group:'结构', icon:'I', fields:[
+    {key:'name', label:'名称', type:'text', required:true},
+    {key:'subtitle', label:'副标题', type:'text'},
+    {key:'image', label:'图片', type:'image'},
+    {key:'caption', label:'图片说明', type:'text'},
+    {key:'rows', label:'信息行', type:'template-list', item:'InfoboxRow',
+      itemFields:[{key:'label', label:'标签'},{key:'value', label:'值'}]}
+  ]},
+  Collapsible:{label:'折叠框', group:'结构', icon:'C', container:true, fields:[
+    {key:'title', label:'标题', type:'text', required:true},
+    {key:'expanded', label:'默认展开', type:'boolean', def:true}
+  ]},
+  Navbox:{label:'导航盒', group:'结构', icon:'N', fields:[
+    {key:'title', label:'标题', type:'text'},
+    {key:'links', label:'链接', type:'text', hint:'用顿号分隔，例如：首页、最近更改、随机页面'}
+  ]},
+  Sidebar:{label:'侧边栏', group:'结构', icon:'S', container:true, fields:[
+    {key:'title', label:'标题', type:'text'}
+  ]},
+
+  Image:{label:'图片', group:'媒体', icon:'Im', fields:[
+    {key:'src', label:'图片', type:'image', required:true},
+    {key:'caption', label:'图注', type:'text'},
+    {key:'align', label:'对齐', type:'select', options:['随流','左浮动','右浮动'], def:'随流'}
+  ]},
+  Link:{label:'站内链接', group:'媒体', icon:'L', fields:[
+    {key:'target', label:'目标页面', type:'text', required:true},
+    {key:'text', label:'显示文字', type:'text'}
+  ]},
+
+  Notice:{label:'提示框', group:'数据', icon:'!', fields:[
+    {key:'type', label:'类型', type:'select', options:['info','warning','error'], def:'info'},
+    {key:'text', label:'文字', type:'richtext'}
+  ]},
+  Table:{label:'表格', group:'数据', icon:'T', fields:[
+    {key:'caption', label:'表格标题', type:'text'},
+    {key:'headers', label:'表头', type:'text', hint:'用逗号分隔列名'},
+    {key:'rows', label:'数据行', type:'code', hint:'每行一条记录，列之间用竖线分隔'}
+  ]},
+
+  RawHTML:{label:'自定义 HTML', group:'高级', icon:'<>', danger:true, fields:[
+    {key:'html', label:'HTML 源码', type:'code', hint:'危险块：直接输出，不做转义。样板中只显示源码、不执行。'}
+  ]}
+};
+var GROUPS = ['文本','结构','媒体','数据','高级'];
+
+/* ============================================================
+   1b. SVG 图标（只用于编辑器；展示系统不使用任何图标）
+   ============================================================ */
+var ICONS = {
+  Paragraph:'<path d="M2.5 4h11M2.5 8h11M2.5 12h6"/>',
+  Heading:'<path d="M3.5 3.5v9M9 3.5v9M3.5 8h5.5"/>',
+  Quote:'<path d="M2.5 4.5h4v4H4A1.5 1.5 0 0 1 2.5 7zM9.5 4.5h4v4H11A1.5 1.5 0 0 1 9.5 7z"/>',
+  CodeBlock:'<path d="M6 4.5L2.5 8 6 11.5M10 4.5L13.5 8 10 11.5"/>',
+  Infobox:'<path d="M2.5 3h11v10h-11zM2.5 6.2h11M6.2 6.2V13"/>',
+  Collapsible:'<path d="M2.5 3.5h11v9h-11zM5.5 7l2.5 2.5L10.5 7"/>',
+  Navbox:'<path d="M2.5 3.5h11v9h-11zM2.5 6.5h11M7.5 6.5v6"/>',
+  Sidebar:'<path d="M2.5 3.5h11v9h-11zM9.5 3.5v9"/>',
+  Image:'<path d="M2.5 3.5h11v9h-11zM4 11.3l3-3.4 2.2 2.5 1.4-1.3 2.4 2.2"/><circle cx="5.6" cy="6.2" r="1"/>',
+  Link:'<path d="M6.8 9.2a2.4 2.4 0 0 1 0-3.4l1.2-1.2a2.4 2.4 0 0 1 3.4 3.4l-.6.6M9.2 6.8a2.4 2.4 0 0 1 0 3.4l-1.2 1.2a2.4 2.4 0 0 1-3.4-3.4l.6-.6"/>',
+  Notice:'<circle cx="8" cy="8" r="5.5"/><path d="M8 7.4v3.4M8 4.9v.1"/>',
+  Table:'<path d="M2.5 3.5h11v9h-11zM2.5 6.5h11M2.5 9.5h11M6.5 3.5v9"/>',
+  RawHTML:'<path d="M5 4.5L2.5 8 5 11.5M11 4.5L13.5 8 11 11.5M9 3.5l-2 9"/>',
+  up:'<path d="M8 12.5V4M4.5 7.5L8 4l3.5 3.5"/>',
+  down:'<path d="M8 3.5V12M4.5 8.5L8 12l3.5-3.5"/>',
+  trash:'<path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.6 4.5l.6 8.5h5.6l.6-8.5"/>',
+  grip:'<path d="M5.5 4.5h5M5.5 8h5M5.5 11.5h5"/>',
+  upload:'<path d="M8 11V3.5M5.2 6.3L8 3.5l2.8 2.8M3 13h10"/>',
+  plus:'<path d="M8 3.5v9M3.5 8h9"/>',
+  dropin:'<path d="M2.5 9.5v3h11v-3M8 2.5v7M5.5 7L8 9.5 10.5 7"/>'
+};
+function ico(name, size, cls){
+  var w = size || 15;
+  return '<svg class="ico' + (cls ? ' ' + cls : '') + '" width="' + w + '" height="' + w
+       + '" viewBox="0 0 16 16" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+
+/* ============================================================
+   2. 状态与工具
+   ============================================================ */
+var uid = 0;
+function nid(){ return 'b' + (++uid); }
+function esc(s){
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function createBlock(type){
+  var s = SCHEMA[type], p = {};
+  s.fields.forEach(function(f){
+    if (f.type === 'select') p[f.key] = f.def || f.options[0];
+    else if (f.type === 'boolean') p[f.key] = !!f.def;
+    else if (f.type === 'template-list') p[f.key] = [];
+    else p[f.key] = '';
+  });
+  return { id:nid(), type:type, params:p, children:[], _raw:{css:'',js:''} };
+}
+function P(type, params, children){
+  var b = createBlock(type);
+  Object.assign(b.params, params || {});
+  if (children) b.children = children;
+  return b;
+}
+
+var state = { blocks: [], selected: null, mode: 'tree', path: 'main/沈括' };
+
+function findEntry(id, list, parentId){
+  list = list || state.blocks; parentId = parentId || 'root';
+  for (var i = 0; i < list.length; i++){
+    if (list[i].id === id) return { node:list[i], list:list, index:i, parentId:parentId };
+    var r = findEntry(id, list[i].children, list[i].id);
+    if (r) return r;
+  }
+  return null;
+}
+function listOf(parentId){
+  if (parentId === 'root') return state.blocks;
+  var e = findEntry(parentId);
+  return e ? e.node.children : null;
+}
+function contains(node, id){
+  if (node.id === id) return true;
+  for (var i = 0; i < node.children.length; i++) if (contains(node.children[i], id)) return true;
+  return false;
+}
+function countBlocks(list){
+  var n = 0;
+  list.forEach(function(b){ n += 1 + countBlocks(b.children); });
+  return n;
+}
+
+/* ============================================================
+   3. 示例数据
+   ============================================================ */
+function presetShenkuo(){
+  return [
+    P('Notice', {type:'info', text:"这是一页样板内容。左侧篮子里的块都可以拖进来，参数在右栏填写。"}),
+    P('Paragraph', {text:"'''沈括'''（1031年—1095年），字'''存中'''，号梦溪丈人，杭州钱塘县人，北宋政治家、科学家。晚年隐居润州梦溪园，写成《[[梦溪笔谈]]》二十六卷。"}),
+    P('Infobox', {
+      name:'沈括', subtitle:'北宋政治家、科学家', image:'assets/shenkuo.png',
+      caption:'画像为示意占位，非历史图像',
+      rows:[
+        {label:'字', value:'存中'},
+        {label:'号', value:'梦溪丈人'},
+        {label:'出生', value:'1031年，杭州钱塘县'},
+        {label:'逝世', value:'1095年，润州'},
+        {label:'代表作', value:'《梦溪笔谈》'}
+      ]
+    }),
+    P('Sidebar', {title:'沈括相关条目'}, [
+      P('Heading', {level:'4', text:'著作'}),
+      P('Paragraph', {text:'《梦溪笔谈》、[[苏沈良方]]、长兴集（已佚）'}),
+      P('Heading', {level:'4', text:'相关人物'}),
+      P('Paragraph', {text:'[[王安石]]、[[苏轼]]、[[毕昇]]、[[苏颂]]'})
+    ]),
+    P('Heading', {level:'2', text:'生平'}),
+    P('Heading', {level:'3', text:'早年与仕途'}),
+    P('Paragraph', {text:"沈括出身官宦之家。皇祐三年（1051年）以父荫入仕，任沭阳县主簿；嘉祐八年（1063年）中进士。熙宁年间支持并参与[[王安石变法]]，先后担任权三司使、翰林学士。"}),
+    P('Collapsible', {title:'边界交涉的一段插曲', expanded:true}, [
+      P('Image', {src:'assets/route.png', caption:'使辽路线示意（占位图）', align:'随流'}),
+      P('Paragraph', {text:"据《宋史》本传记载，沈括在辽廷以所录档案为据逐条辩驳。此行的图记后来成为北宋了解北方边地的重要资料，今已散佚。"})
+    ]),
+    P('Heading', {level:'2', text:'主要著作'}),
+    P('Table', {
+      caption:'沈括主要著作一览',
+      headers:'书名,成书年代,卷数,存佚',
+      rows:'梦溪笔谈|约1088年|26卷|存\n补笔谈|约1090年|3卷|存\n使契丹图抄|1075年|—|佚'
+    }),
+    P('CodeBlock', {language:'json', code:'{\n  "title": "沈括",\n  "blocks": [ /* 内容块树 */ ]\n}'}),
+    P('Heading', {level:'2', text:'评价'}),
+    P('Quote', {text:'予退处林下，深居绝过从，思平日与客言者，时纪一事于笔。', source:'沈括，《梦溪笔谈》自序'}),
+    P('Notice', {type:'warning', text:'本条目部分内容依据二手研究整理，具体年代与职官名称请以原始文献为准。'}),
+    P('Navbox', {title:'沈括', links:'梦溪笔谈、补笔谈、续笔谈、苏沈良方、长兴集'})
+  ];
+}
+function presetHome(){
+  return [
+    P('Heading', {level:'2', text:'欢迎'}),
+    P('Paragraph', {text:"这是'''示例Wiki'''的首页。所有内容都由内容块搭成，编辑时像选菜一样把块拖进页面即可。"}),
+    P('Notice', {type:'info', text:'先从左侧篮子拖一个「段落」到画布试试。'}),
+    P('Heading', {level:'2', text:'入口'}),
+    P('Navbox', {title:'常用入口', links:'最近更改、随机页面、全部页面、页面信息'})
+  ];
+}
+
+/* ============================================================
+   4. 渲染：左栏篮子
+   ============================================================ */
+var basketGroups = document.getElementById('basket-groups');
+function renderBasket(filter){
+  var kw = (filter || '').trim().toLowerCase();
+  var html = '';
+  GROUPS.forEach(function(g){
+    var items = Object.keys(SCHEMA).filter(function(t){
+      var s = SCHEMA[t];
+      if (s.group !== g) return false;
+      if (!kw) return true;
+      return (t + s.label).toLowerCase().indexOf(kw) >= 0;
+    });
+    if (!items.length) return;
+    html += '<div class="basket-group"><h4>' + g + '</h4><div class="chips">';
+    items.forEach(function(t){
+      var s = SCHEMA[t];
+      html += '<div class="block-chip' + (s.danger ? ' danger' : '') + '" draggable="true" data-type="' + t + '">'
+            +   '<span class="icon">' + ico(t, 15) + '</span>'
+            +   '<span class="names"><span class="zh">' + esc(s.label) + '</span>'
+            +   '<span class="en">' + t + '</span></span>'
+            + '</div>';
+    });
+    html += '</div></div>';
+  });
+  basketGroups.innerHTML = html || '<p class="basket-hint">没有匹配的内容块。</p>';
+}
+
+/* ============================================================
+   5. 渲染：画布（结构视图）
+   ============================================================ */
+var canvasBody = document.getElementById('canvas-body');
+var canvasCount = document.getElementById('canvas-count');
+var canvasPath = document.getElementById('canvas-path');
+
+function summary(n){
+  var s = SCHEMA[n.type], parts = [];
+  s.fields.forEach(function(f){
+    if (parts.length >= 3) return;
+    var v = n.params[f.key];
+    if (f.type === 'template-list') v = (v && v.length) ? (v.length + ' 行') : '';
+    else if (f.type === 'boolean') v = v ? '是' : '否';
+    if (v === undefined || v === null || v === '') return;
+    parts.push(f.label + '：' + String(v).replace(/\s+/g, ' ').slice(0, 46));
+  });
+  if (s.container) parts.push('子块 ' + n.children.length + ' 个');
+  return parts.length
+    ? esc(parts.join('　'))
+    : '<span class="bc-empty">未填写参数</span>';
+}
+function renderCard(n){
+  var s = SCHEMA[n.type];
+  var cls = 'block-card' + (state.selected === n.id ? ' is-selected' : '');
+  var h = '<div class="' + cls + '" data-id="' + n.id + '" draggable="true">';
+  h += '<div class="bc-head">'
+    +  '<span class="bc-handle" title="按住拖动">' + ico('grip', 13) + '</span>'
+    +  '<span class="bc-icon">' + ico(n.type, 15) + '</span>'
+    +  '<span class="bc-type">' + n.type + '</span>'
+    +  '<span class="bc-label">' + esc(s.label) + '</span>'
+    +  '<span class="bc-actions">'
+    +    '<button type="button" data-act="up" title="上移" aria-label="上移">' + ico('up', 13) + '</button>'
+    +    '<button type="button" data-act="down" title="下移" aria-label="下移">' + ico('down', 13) + '</button>'
+    +    '<button type="button" data-act="del" title="删除" aria-label="删除">' + ico('trash', 13) + '</button>'
+    +  '</span></div>';
+  h += '<div class="bc-summary">' + summary(n) + '</div>';
+  if (s.container) h += renderList(n.children, n.id);
+  h += '</div>';
+  return h;
+}
+function renderList(list, parentId){
+  var nested = parentId !== 'root';
+  var h = '<div class="children-list' + (nested ? ' nested' : '') + '" data-parent="' + parentId + '">';
+  if (!list.length){
+    h += nested
+      ? '<div class="empty-zone small">' + ico('plus', 14, 'ez-inline') + '拖到这里成为子块</div>'
+      : '<div class="empty-zone">' + ico('dropin', 24, 'ez-ico')
+        + '这是空页面。把左边篮子里的内容块拖进来，<br>顺序就是页面从上到下的顺序。'
+        + '<br><span style="font-size:.9em">也可以先点篮子里的块，直接追加到末尾。</span></div>';
+  }
+  list.forEach(function(n){ h += renderCard(n); });
+  h += '</div>';
+  return h;
+}
+
+/* ============================================================
+   6. 渲染：成稿预览（与展示系统共用一套样式）
+   ============================================================ */
+function inline(t){
+  var s = esc(t);
+  s = s.replace(/'''(.*?)'''/g, '<b>$1</b>');
+  s = s.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '<a href="#">$2</a>');
+  s = s.replace(/\[\[([^\]]+)\]\]/g, '<a href="#">$1</a>');
+  return s.replace(/\n/g, '<br>');
+}
+function phSvg(w, h, label){
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="占位图">'
+    + '<rect x=".75" y=".75" width="' + (w - 1.5) + '" height="' + (h - 1.5) + '" style="fill:#fafaf9;stroke:#e6e7e6"/>'
+    + '<g style="stroke:#e6e7e6" stroke-width="1"><path d="M0 0l' + w + ' ' + h + 'M' + w + ' 0L0 ' + h + '"/></g>'
+    + '<text x="' + (w / 2) + '" y="' + (h / 2 + 4) + '" text-anchor="middle" font-size="12"'
+    + ' font-family="sans-serif" style="fill:#7d838a">' + esc(label) + '</text></svg>';
+}
+function renderPreview(n){
+  var p = n.params, inner = '', s = SCHEMA[n.type];
+  switch (n.type){
+    case 'Paragraph':
+      inner = '<p>' + inline(p.text) + '</p>'; break;
+    case 'Heading': {
+      var lv = p.level || '2';
+      inner = '<h' + lv + '>' + esc(p.text) + '</h' + lv + '>'; break;
+    }
+    case 'Notice':
+      inner = '<div class="notice' + (p.type === 'warning' ? ' notice-warn' : '') + '">'
+        + '<span class="n-icon">' + (p.type === 'warning' ? '!' : (p.type === 'error' ? '!' : 'i')) + '</span>'
+        + '<div class="n-body"><p>' + inline(p.text) + '</p></div></div>'; break;
+    case 'Quote':
+      inner = '<blockquote class="quote"><p>' + inline(p.text) + '</p>'
+        + (p.source ? '<span class="q-src">' + esc(p.source) + '</span>' : '') + '</blockquote>'; break;
+    case 'CodeBlock':
+      inner = '<pre class="code">' + esc(p.code) + '</pre>'; break;
+    case 'Image': {
+      var align = p.align === '左浮动' ? ' fig-left' : (p.align === '右浮动' ? ' fig-right' : '');
+      inner = '<figure class="figure' + align + '"><span class="fig-inner">' + phSvg(380, 150, '示例图片')
+        + '</span>' + (p.caption ? '<figcaption>' + esc(p.caption) + '</figcaption>' : '') + '</figure>'; break;
+    }
+    case 'Link':
+      inner = '<p><a href="#">' + esc(p.text || p.target) + '</a></p>'; break;
+    case 'Infobox': {
+      var rows = (p.rows || []).map(function(r){
+        return '<tr><th>' + esc(r.label) + '</th><td>' + inline(r.value) + '</td></tr>';
+      }).join('');
+      inner = '<section class="infobox"><div class="ib-head"><div class="ib-title">' + esc(p.name) + '</div>'
+        + (p.subtitle ? '<div class="ib-sub">' + esc(p.subtitle) + '</div>' : '') + '</div>'
+        + '<div class="ib-body"><figure class="ib-figure"><span class="fig-inner">'
+        + phSvg(196, 150, '示例图片') + '</span>'
+        + (p.caption ? '<figcaption>' + esc(p.caption) + '</figcaption>' : '') + '</figure>'
+        + '<table class="ib-rows"><tbody>' + rows + '</tbody></table></div></section>'; break;
+    }
+    case 'Collapsible':
+      inner = '<details class="collapsible"' + (p.expanded ? ' open' : '') + '>'
+        + '<summary>' + esc(p.title) + '</summary><div class="col-body">'
+        + n.children.map(renderPreview).join('') + '</div></details>'; break;
+    case 'Sidebar': {
+      var kids = n.children.length
+        ? n.children.map(function(c){
+            return '<div class="st-block">' + renderPreview(c) + '</div>';
+          }).join('')
+        : '<div class="st-block" style="color:#7d838a">（还没有子块）</div>';
+      inner = '<section class="sidebar-tpl"><div class="st-title">' + esc(p.title) + '</div>'
+        + '<div class="st-body">' + kids + '</div></section>'; break;
+    }
+    case 'Navbox': {
+      var links = (p.links || '').split(/[、,，]/).filter(function(x){ return x.trim(); })
+        .map(function(x){ return '<a href="#">' + esc(x.trim()) + '</a>'; }).join('、');
+      inner = '<nav class="navbox"><div class="nv-title">' + esc(p.title) + '</div>'
+        + '<div class="nv-td">' + links + '</div></nav>'; break;
+    }
+    case 'Table': {
+      var heads = (p.headers || '').split(/[,，]/).filter(function(x){ return x.trim(); });
+      var lines = (p.rows || '').split('\n').filter(function(l){ return l.trim(); }).map(function(l){ return l.split('|'); });
+      inner = '<table class="wikitable">'
+        + (p.caption ? '<caption>' + esc(p.caption) + '</caption>' : '')
+        + (heads.length ? '<thead><tr>' + heads.map(function(h){ return '<th>' + esc(h.trim()) + '</th>'; }).join('') + '</tr></thead>' : '')
+        + '<tbody>' + lines.map(function(r){
+            return '<tr>' + r.map(function(c){ return '<td>' + inline(c.trim()) + '</td>'; }).join('') + '</tr>';
+          }).join('') + '</tbody></table>'; break;
+    }
+    case 'RawHTML':
+      inner = '<div class="rawhtml"><div class="rawhtml-tag">自定义 HTML（样板中只显示源码，不执行）</div>'
+        + '<pre class="code">' + esc(p.html) + '</pre></div>'; break;
+    default:
+      inner = '<p style="color:#7d838a">未知块类型 ' + esc(n.type) + '</p>';
+  }
+  return '<div class="pv-block" data-id="' + n.id + '" data-type="' + n.type + '">' + inner + '</div>';
+}
+
+/* ============================================================
+   7. 主渲染入口
+   ============================================================ */
+function renderCanvas(){
+  if (state.mode === 'tree'){
+    canvasBody.classList.remove('pv-body');
+    canvasBody.innerHTML = renderList(state.blocks, 'root');
+  } else {
+    canvasBody.classList.add('pv-body');
+    canvasBody.innerHTML = state.blocks.length
+      ? state.blocks.map(renderPreview).join('')
+      : '<div class="empty-zone">空页面没有可预览的内容。切回结构视图，从左边篮子里拖几个块进来。</div>';
+  }
+  canvasCount.textContent = '共 ' + countBlocks(state.blocks) + ' 个块（顶层 ' + state.blocks.length + ' 个）';
+  canvasPath.textContent = 'content/pages/' + state.path + '.json';
+}
+function render(){ renderCanvas(); renderInspector(); }
+
+/* ============================================================
+   8. 属性表单
+   ============================================================ */
+var inspector = document.getElementById('inspector');
+function current(){
+  return state.selected ? (findEntry(state.selected) || {}).node : null;
+}
+function fieldHtml(n, f){
+  var v = n.params[f.key], h = '', wrapped = true;
+  h += '<label class="field"><span class="flabel">' + esc(f.label)
+     + (f.required ? ' <i class="req">必填</i>' : '') + '</span>';
+  if (f.type === 'richtext'){
+    h += '<textarea rows="5" data-key="' + f.key + '">' + esc(v) + '</textarea>'
+       + '<span class="fhint">行内格式：三撇号为粗体，双方括号为站内链接，例如 [[梦溪笔谈]]</span>';
+  } else if (f.type === 'code'){
+    h += '<textarea rows="6" data-key="' + f.key + '">' + esc(v) + '</textarea>';
+  } else if (f.type === 'select'){
+    h += '<select data-key="' + f.key + '">' + f.options.map(function(o){
+      return '<option value="' + esc(o) + '"' + (String(v) === String(o) ? ' selected' : '') + '>' + esc(o) + '</option>';
+    }).join('') + '</select>';
+  } else if (f.type === 'boolean'){
+    wrapped = false;
+    h = '<div class="field"><label class="check"><input type="checkbox" data-key="' + f.key + '"'
+      + (v ? ' checked' : '') + '> ' + esc(f.label) + '</label></div>';
+  } else if (f.type === 'image'){
+    h += '<span class="with-btn"><input type="text" data-key="' + f.key + '" value="' + esc(v) + '" placeholder="assets/文件名.png">'
+      + '<button type="button" class="btn" data-upload="' + f.key + '">' + ico('upload', 14, 'ico-lead') + '上传</button></span>';
+  } else if (f.type === 'template-list'){
+    var rows = v || [];
+    h += '<div class="rows-editor" data-rows="' + f.key + '">';
+    rows.forEach(function(r, i){
+      h += '<div class="row-item">';
+      f.itemFields.forEach(function(sf){
+        h += '<input data-rowkey="' + sf.key + '" data-idx="' + i + '" value="' + esc(r[sf.key]) + '"'
+           + ' placeholder="' + esc(sf.label) + '">';
+      });
+      h += '<button type="button" class="row-del" data-delrow="' + f.key + '" data-idx="' + i
+         + '" title="删除这一行" aria-label="删除这一行">' + ico('trash', 13) + '</button></div>';
+    });
+    h += '<button type="button" class="row-add" data-addrow="' + f.key + '">'
+       + ico('plus', 13, 'ico-lead') + '添加一行</button></div>';
+  } else {
+    h += '<input type="text" data-key="' + f.key + '" value="' + esc(v) + '">';
+  }
+  if (f.hint) h += '<span class="fhint">' + esc(f.hint) + '</span>';
+  return wrapped ? (h + '</label>') : h;
+}
+function renderInspector(){
+  var n = current();
+  if (!n){
+    inspector.innerHTML = '<p class="ins-empty">还没有选中内容块。<br>在中间画布上点一下某个块，这里就会显示它的参数表单。</p>';
+    return;
+  }
+  var s = SCHEMA[n.type];
+  var h = '<div class="ins-head">' + '<span class="bc-icon">' + ico(n.type, 15) + '</span>'
+        + '<b>' + esc(s.label) + '</b><code>' + n.type + '</code></div>';
+  h += '<div class="fields">' + s.fields.map(function(f){ return fieldHtml(n, f); }).join('') + '</div>';
+  if (s.container) h += '<p class="ins-note" style="padding:0 .8em">这个块可以容纳子块：把其它块拖进它内部的虚线区即可。</p>';
+  h += '<details class="advanced"><summary>高级（裸露修改）</summary>'
+     + '<label class="field"><span class="flabel">_raw.css</span>'
+     + '<textarea rows="3" data-raw="css">' + esc(n._raw.css) + '</textarea></label>'
+     + '<label class="field"><span class="flabel">_raw.js</span>'
+     + '<textarea rows="3" data-raw="js">' + esc(n._raw.js) + '</textarea></label>'
+     + '<p class="ins-note">默认折叠，不干扰日常编辑。展示系统会为这个块注入这段 CSS，并在它挂载后执行这段 JS。</p>'
+     + '</details>';
+  inspector.innerHTML = h;
+}
+
+/* ============================================================
+   9. 表单输入
+   ============================================================ */
+function onFieldInput(e){
+  var t = e.target, n = current();
+  if (!n) return;
+  if (t.dataset.key){
+    n.params[t.dataset.key] = (t.type === 'checkbox') ? t.checked : t.value;
+    renderCanvas();
+  } else if (t.dataset.raw){
+    n._raw[t.dataset.raw] = t.value;
+  } else if (t.dataset.rowkey){
+    var key = t.closest('.rows-editor').dataset.rows;
+    var row = (n.params[key] || [])[+t.dataset.idx];
+    if (row) row[t.dataset.rowkey] = t.value;
+    renderCanvas();
+  }
+}
+inspector.addEventListener('input', onFieldInput);
+inspector.addEventListener('change', onFieldInput);
+inspector.addEventListener('click', function(e){
+  var n = current(); if (!n) return;
+  var add = e.target.closest('[data-addrow]'), del = e.target.closest('[data-delrow]'),
+      up = e.target.closest('[data-upload]');
+  if (add){
+    var k1 = add.dataset.addrow;
+    var item = SCHEMA[n.type].fields.filter(function(f){ return f.key === k1; })[0];
+    var blank = {};
+    item.itemFields.forEach(function(sf){ blank[sf.key] = ''; });
+    n.params[k1].push(blank);
+    render(); return;
+  }
+  if (del){
+    var k2 = del.dataset.delrow;
+    n.params[k2].splice(+del.dataset.idx, 1);
+    render(); return;
+  }
+  if (up){
+    toast('原型不做真实上传：接入 GitHub Contents API 后，这里会把图片写入 content/assets/ 并回填路径。');
+  }
+});
+
+/* ============================================================
+   10. 拖拽：篮子到画布、画布内排序与嵌套
+   ============================================================ */
+var dragPayload = null;
+var insLine = document.createElement('div');
+insLine.className = 'ins-line';
+
+function childCards(list){
+  return Array.prototype.filter.call(list.children, function(c){
+    return c.classList && c.classList.contains('block-card');
+  });
+}
+function endDrag(){
+  dragPayload = null;
+  if (insLine.parentNode) insLine.parentNode.removeChild(insLine);
+  canvasBody.classList.remove('dragging');
+}
+
+basketGroups.addEventListener('dragstart', function(e){
+  var chip = e.target.closest('.block-chip');
+  if (!chip) return;
+  dragPayload = { kind:'new', type: chip.dataset.type };
+  canvasBody.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'copy';
+  try { e.dataTransfer.setData('text/plain', chip.dataset.type); } catch (err) {}
+});
+basketGroups.addEventListener('click', function(e){
+  var chip = e.target.closest('.block-chip');
+  if (!chip) return;
+  var b = createBlock(chip.dataset.type);
+  state.blocks.push(b);
+  state.selected = b.id;
+  render();
+  toast('已把「' + SCHEMA[b.type].label + '」追加到页面末尾。');
+});
+
+canvasBody.addEventListener('dragstart', function(e){
+  var card = e.target.closest('.block-card');
+  if (!card) return;
+  dragPayload = { kind:'move', id: card.dataset.id };
+  canvasBody.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch (err) {}
+  e.stopPropagation();
+});
+canvasBody.addEventListener('dragover', function(e){
+  if (!dragPayload) return;
+  var list = e.target.closest('.children-list');
+  if (!list) return;
+  if (state.mode !== 'tree') return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = dragPayload.kind === 'new' ? 'copy' : 'move';
+  var cards = childCards(list), idx = cards.length;
+  for (var i = 0; i < cards.length; i++){
+    var r = cards[i].getBoundingClientRect();
+    if (e.clientY < r.top + r.height / 2){ idx = i; break; }
+  }
+  list.insertBefore(insLine, cards[idx] || null);
+});
+canvasBody.addEventListener('drop', function(e){
+  if (!dragPayload) return;
+  var list = e.target.closest('.children-list');
+  if (!list) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var parentId = list.dataset.parent;
+  var target = listOf(parentId);
+  if (!target) return endDrag();
+
+  var idx = 0, seen = false;
+  Array.prototype.forEach.call(list.children, function(c){
+    if (c === insLine){ seen = true; return; }
+    if (!seen && c.classList && c.classList.contains('block-card')) idx++;
+  });
+  if (!seen) idx = childCards(list).length;
+
+  if (dragPayload.kind === 'new'){
+    var nb = createBlock(dragPayload.type);
+    target.splice(idx, 0, nb);
+    state.selected = nb.id;
+  } else {
+    var entry = findEntry(dragPayload.id);
+    if (entry){
+      if (contains(entry.node, parentId)){ endDrag(); toast('不能把一个块放进它自己的内部。'); return; }
+      if (entry.list === target && entry.index < idx) idx--;
+      entry.list.splice(entry.index, 1);
+      target.splice(idx, 0, entry.node);
+      state.selected = entry.node.id;
+    }
+  }
+  endDrag();
+  render();
+});
+document.addEventListener('dragend', endDrag);
+
+/* ============================================================
+   11. 画布点击：选中、上移、下移、删除
+   ============================================================ */
+canvasBody.addEventListener('click', function(e){
+  var card = e.target.closest('.block-card, .pv-block');
+  if (!card) return;
+  var id = card.dataset.id;
+  var btn = e.target.closest('[data-act]');
+  if (btn && state.mode === 'tree'){
+    var entry = findEntry(id);
+    if (!entry) return;
+    var act = btn.dataset.act;
+    if (act === 'up' && entry.index > 0){
+      entry.list.splice(entry.index - 1, 0, entry.list.splice(entry.index, 1)[0]);
+    } else if (act === 'down' && entry.index < entry.list.length - 1){
+      entry.list.splice(entry.index + 1, 0, entry.list.splice(entry.index, 1)[0]);
+    } else if (act === 'del'){
+      entry.list.splice(entry.index, 1);
+      if (state.selected === id) state.selected = null;
+    }
+    render();
+    return;
+  }
+  state.selected = id;
+  render();
+  var sel = canvasBody.querySelector('.block-card.is-selected');
+  if (sel) sel.scrollIntoView({block:'nearest'});
+});
+
+/* ============================================================
+   12. 顶栏交互
+   ============================================================ */
+function setMode(mode){
+  state.mode = mode;
+  document.getElementById('view-tree').setAttribute('aria-pressed', String(mode === 'tree'));
+  document.getElementById('view-preview').setAttribute('aria-pressed', String(mode === 'preview'));
+  render();
+}
+document.getElementById('view-tree').addEventListener('click', function(){ setMode('tree'); });
+document.getElementById('view-preview').addEventListener('click', function(){ setMode('preview'); });
+
+document.getElementById('btn-clear').addEventListener('click', function(){
+  state.blocks = []; state.selected = null; render();
+  toast('页面已清空，现在是一个空页面。');
+});
+document.getElementById('btn-sample').addEventListener('click', function(){
+  loadPage(state.path === 'main/首页' ? 'main/首页' : 'main/沈括');
+});
+document.getElementById('btn-save').addEventListener('click', function(){
+  toast('已提交到 GitHub（原型不做真实提交）：commit message 自动生成 "编辑 main/沈括：' + countBlocks(state.blocks) + ' 个块"。');
+});
+document.getElementById('btn-logout').addEventListener('click', function(e){
+  e.preventDefault();
+  toast('GitHub Device Flow 登录：原型未接入，正式版在这里退出并清除本地 token。');
+});
+
+var pageSelect = document.getElementById('page-select');
+function loadPage(path){
+  state.path = path;
+  state.selected = null;
+  if (path === 'main/沈括') state.blocks = presetShenkuo();
+  else if (path === 'main/首页') state.blocks = presetHome();
+  else state.blocks = [];
+  pageSelect.value = path;
+  document.getElementById('page-state').textContent = state.blocks.length ? '已存在' : '新页面';
+  render();
+}
+pageSelect.addEventListener('change', function(){ loadPage(pageSelect.value); });
+
+document.getElementById('filter').addEventListener('input', function(e){
+  renderBasket(e.target.value);
+});
+
+/* ============================================================
+   13. 提示条与说明面板
+   ============================================================ */
+var toastEl = document.getElementById('toast'), toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, 3200);
+}
+var notes = document.getElementById('notes');
+document.getElementById('notes-toggle').addEventListener('click', function(){ notes.hidden = !notes.hidden; });
+document.getElementById('notes-close').addEventListener('click', function(){ notes.hidden = true; });
+
+/* ============================================================
+   14. 启动
+   ============================================================ */
+renderBasket('');
+state.blocks = [];          /* 默认就是空页面，从零开始拖 */
+state.selected = null;
+pageSelect.value = 'main/新页面';
+document.getElementById('page-state').textContent = '新页面';
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "title": "梦溪笔谈",
+  "namespace": "main",
+  "categories": ["北宋典籍", "笔记体著作"],
+  "blocks": [
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "《'''梦溪笔谈'''》是[[shen-kuo|沈括]]晚年所著的笔记体著作，二十六卷，另有《补笔谈》三卷、《续笔谈》一卷。全书分故事、辩证、乐律、象数、人事、官政、权智、艺文、书画、技艺、器用、神奇、异事、谬误、讥谑、杂志、药议等门类。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "内容与价值" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "书中记有[[bi-sheng|毕昇]]活字印刷术的具体做法，是这项技术唯一传世的同期记载；也讨论了隙积术、会圆术等数学方法，以及雁荡山与太行山的地貌与化石观察。"
+      },
+      "children": []
+    },
+    {
+      "type": "Quote",
+      "params": {
+        "text": "若止印三二本，未为简易；若印数十百千本，则极为神速。",
+        "source": "《梦溪笔谈》记毕昇活字印刷"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "版本" },
+      "children": []
+    },
+    {
+      "type": "Table",
+      "params": {
+        "caption": "主要卷次构成",
+        "headers": "书名,卷数,备注",
+        "rows": "梦溪笔谈|26卷|本编\n补笔谈|3卷|补遗\n续笔谈|1卷|杂记与考辨"
+      },
+      "children": []
+    }
+  ],
+  "raw": { "css": "", "js": "" }
+}

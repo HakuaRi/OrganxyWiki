@@ -1,0 +1,67 @@
+{
+  "title": "首页",
+  "namespace": "main",
+  "categories": [],
+  "blocks": [
+    {
+      "type": "Notice",
+      "params": {
+        "type": "info",
+        "text": "这是'''示例Wiki'''的首页。所有内容都由内容块搭成，编辑时像选菜一样把块拖进页面即可。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "本站是一个模板驱动的内容站：页面不是自由文本，而是一棵内容块树。每个块有类型、参数与子块，编辑器负责把块拖进页面并填参数，展示系统负责把同一棵树渲染成页面。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "目前的样例条目是[[shen-kuo|沈括]]，以及他晚年所著的[[meng-xi-bi-tan|梦溪笔谈]]。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "这个站点有什么" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "展示系统只读，构建期就把每条路由预渲染成静态 HTML；编辑系统是一个单页应用，通过 GitHub API 直接读写仓库里的内容文件。两者共用同一份模板 Schema 与同一套渲染组件，因此编辑时的预览和线上的页面是一套观感。"
+      },
+      "children": []
+    },
+    {
+      "type": "Quote",
+      "params": {
+        "text": "所有内容都可以有裸露的修改接口。",
+        "source": "本站的设计原则之一"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "常用入口" },
+      "children": []
+    },
+    {
+      "type": "Navbox",
+      "params": {
+        "title": "常用入口",
+        "links": "",
+        "groups": [
+          { "label": "浏览", "links": "沈括、梦溪笔谈、最近更改、随机页面" },
+          { "label": "工具", "links": "链入页面、页面信息、引用本页、可打印版" }
+        ]
+      },
+      "children": []
+    }
+  ],
+  "raw": { "css": "", "js": "" }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "编辑系统：内容块篮子与拖拽编辑，通过 GitHub API 读写内容",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@wiki/shared": "*",
+    "vue": "^3.5.0"
+  }
+}

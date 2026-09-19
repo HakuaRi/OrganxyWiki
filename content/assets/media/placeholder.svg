@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="240" viewBox="0 0 380 240" role="img" aria-label="示例图片占位">
+  <rect x="0.75" y="0.75" width="378.5" height="238.5" fill="#fafaf9" stroke="#e6e7e6"/>
+  <g stroke="#e6e7e6" stroke-width="1">
+    <path d="M0 0l380 240M380 0L0 240"/>
+  </g>
+  <text x="190" y="126" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#7d838a">示例图片（占位）</text>
+</svg>

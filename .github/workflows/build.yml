@@ -1,0 +1,77 @@
+# 构建展示系统与编辑器，并部署到 GitHub Pages。
+#
+# 一次性准备（在仓库的 Settings 里做，不需要改这里）：
+#   1. Pages 的 Source 选成 GitHub Actions。
+#   2. 在 content/site.json 里填好 base 与 editorBase，让资源路径与实际部署地址一致。
+#
+# 这份工作流不接触任何密钥：编辑器所需的 Client ID 与仓库坐标由使用者
+# 在自己的浏览器里填写，只存在本机，不参与构建。
+
+name: 构建并部署
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/**'
+      - 'shared/**'
+      - 'public-site/**'
+      - 'editor/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          # 最近更改要用 git log，浅克隆会拿不到历史。
+          fetch-depth: 0
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run check
+
+      - name: 单元测试
+        run: npm test
+
+      - name: 构建两个系统
+        run: npm run build:dist
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

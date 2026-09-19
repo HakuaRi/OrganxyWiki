@@ -1,0 +1,332 @@
+{
+  "title": "沈括",
+  "namespace": "main",
+  "categories": ["北宋官员", "北宋科学家", "杭州人", "1031年出生", "1095年逝世"],
+  "blocks": [
+    {
+      "type": "Notice",
+      "params": {
+        "type": "info",
+        "text": "这是一页样例条目，内容只用于演示各内容块的渲染效果，不追求史实完整。"
+      },
+      "children": []
+    },
+    {
+      "type": "Infobox",
+      "params": {
+        "name": "沈括",
+        "subtitle": "北宋政治家、科学家",
+        "image": "/media/placeholder.svg",
+        "caption": "画像为示意占位，非历史图像",
+        "rows": [
+          { "label": "姓名", "value": "沈括" },
+          { "label": "字", "value": "存中" },
+          { "label": "号", "value": "梦溪丈人" },
+          { "label": "出生", "value": "1031年，杭州钱塘县" },
+          { "label": "逝世", "value": "1095年，润州（今江苏镇江）" },
+          { "label": "领域", "value": "数学、天文、地理、医药" },
+          { "label": "代表作", "value": "《[[meng-xi-bi-tan|梦溪笔谈]]》" }
+        ]
+      },
+      "children": []
+    },
+    {
+      "type": "Sidebar",
+      "params": { "title": "沈括相关条目" },
+      "children": [
+        {
+          "type": "Heading",
+          "params": { "level": "4", "text": "著作" },
+          "children": []
+        },
+        {
+          "type": "Paragraph",
+          "params": { "text": "[[meng-xi-bi-tan|梦溪笔谈]]、[[su-shen-liang-fang|苏沈良方]]、长兴集（已佚）" },
+          "children": []
+        },
+        {
+          "type": "Heading",
+          "params": { "level": "4", "text": "相关人物" },
+          "children": []
+        },
+        {
+          "type": "Paragraph",
+          "params": { "text": "[[wang-an-shi|王安石]]、[[su-shi|苏轼]]、[[bi-sheng|毕昇]]、[[su-song|苏颂]]" },
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "'''沈括'''（1031年—1095年），字'''存中'''，号'''梦溪丈人'''，杭州钱塘县（今浙江杭州）人，北宋政治家、科学家。他历任沭阳县主簿、提举司天监、权三司使、知延州等职，参与了[[wang-an-shi|王安石]]主持的变法，也曾出使辽国交涉边界。晚年隐居润州梦溪园，写成《[[meng-xi-bi-tan|梦溪笔谈]]》二十六卷。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "沈括的研究横跨数学、天文、历法、地理、地质、医药与乐律。他在《梦溪笔谈》中记录并讨论了隙积术、会圆术、十二气历等内容，也留下了关于[[bi-sheng|毕昇]]活字印刷术的唯一传世记载。英国科学史家[李约瑟](https://example.org/needham)称《梦溪笔谈》为中国科学史上的坐标。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "他出身官宦之家，父沈周官至太常少卿。皇祐三年（1051年）以父荫入仕，任沭阳县主簿，主持疏浚沭水、筑堤造田；嘉祐八年（1063年）中进士，此后历任昭文馆编校、提举司天监等职。熙宁年间他支持并参与变法，先后担任权三司使、翰林学士，主持整顿盐政与财政。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "熙宁八年（1075年），宋辽因边界划分发生争执，沈括奉命出使辽国交涉。他事先查阅档案、绘制边界图册，据理力争，使争议边界得以维持原状；归途所记山川道里风俗，写成《使契丹图抄》。元丰五年（1082年）宋军在永乐城之战中大败，他因处置失当被贬，此后辗转均州、秀州，晚年才获准迁居润州。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "《梦溪笔谈》二十六卷及《补笔谈》《续笔谈》记其见闻与考辨，内容涉及自然科学的多个门类，也保存了北宋若干技术与制度的细节。此外他编有医方书《良方》，后与苏轼方书合刊为《[[su-shen-liang-fang|苏沈良方]]》。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "生平" },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "早年与仕途" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "沈括出身官宦之家，父沈周官至太常少卿。皇祐三年（1051年），沈括以父荫入仕，任沭阳县主簿，主持疏浚沭水、筑堤造田。嘉祐八年（1063年）中进士，此后历任昭文馆编校、提举司天监等职。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "熙宁年间，沈括支持并参与[[wang-an-shi|王安石变法]]，先后担任权三司使、翰林学士，主持整顿盐政与财政。他同时参与修订历法、改良仪器，是当时少见的兼具行政与学术能力的官员。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "出使辽国" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "熙宁八年（1075年），宋辽因边界划分发生争执，沈括奉命出使辽国交涉。他事先查阅档案，绘制边界图册，据理力争，最终使争议边界得以维持原状。归途中他记录了沿途山川、道路与风俗，写成《使契丹图抄》。"
+      },
+      "children": []
+    },
+    {
+      "type": "Collapsible",
+      "params": { "title": "边界交涉的一段插曲", "expanded": true },
+      "children": [
+        {
+          "type": "Paragraph",
+          "params": {
+            "text": "据《宋史》本传记载，沈括在辽廷以所录档案为据逐条辩驳，对方无以应对。此行的图记后来成为北宋了解北方边地的重要资料，今已散佚，仅部分内容见于他书征引。"
+          },
+          "children": []
+        },
+        {
+          "type": "Image",
+          "params": {
+            "src": "/media/placeholder.svg",
+            "caption": "使辽路线示意（占位图）。图注由图片块的 caption 字段渲染。",
+            "width": "380",
+            "align": "随流"
+          },
+          "children": []
+        },
+        {
+          "type": "Paragraph",
+          "params": {
+            "text": "这段经历也体现了他一贯的方法：先收集原始材料，再以图、表、数据支撑结论。"
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "晚年" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "元丰五年（1082年），宋军在永乐城之战中大败，沈括因处置失当被贬。此后他辗转均州、秀州等地，元丰八年（1085年）后获准迁居润州。他在梦溪园中闭门著述，完成《梦溪笔谈》及其续笔，绍圣二年（1095年）去世。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "学术成就" },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "数学与天文" },
+      "children": []
+    },
+    {
+      "type": "Image",
+      "params": {
+        "src": "/media/placeholder.svg",
+        "caption": "图片的 align 参数设为右浮动：图跨行占住右侧，文字沿左侧逐行环绕，图结束后正文自动回到整宽。",
+        "width": "300",
+        "align": "右浮动"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "在数学上，沈括提出'''隙积术'''，给出堆积体体积的计算方法，被视为高阶等差级数求和的早期成果；又提出'''会圆术'''，用弦长与矢高近似计算弧长。在天文历法上，他主持修订《奉元历》，改进浑仪、景表与浮漏，并主张以节气定月，提出十二气历的构想。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "这些工作的共同点是把测量数据整理成可以递推的算法：先给出可验证的近似，再说明误差来自何处。浑仪、景表、浮漏三件仪器的改造，也都是为了提高观测读数的稳定度。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "地理与地质" },
+      "children": []
+    },
+    {
+      "type": "Image",
+      "params": {
+        "src": "/media/placeholder.svg",
+        "caption": "图片的 align 参数设为左浮动：图跨行占住左侧，文字沿右侧逐行环绕。",
+        "width": "300",
+        "align": "左浮动"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "沈括在考察雁荡山时，以流水侵蚀解释山峰的成因；在太行山见到螺蚌化石，据此推断此地曾经临海，进而提出海陆变迁的看法。他还曾以木屑与面糊制作立体地形图，用于军事与水利规划。"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "这类判断依赖的是把眼前的地貌与长期过程联系起来：山形不是一次成形的，化石也不产于本地。用今天的话说，他是在没有地层学与地质年代概念的时代，做了相当大胆的推断。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "3", "text": "医药与博物" },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "沈括收集民间验方，编成《良方》，后与苏轼的方书合刊为《苏沈良方》。他对药用植物、矿物与动物也有大量观察记录。石油一词即首见于他的著作。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "主要著作" },
+      "children": []
+    },
+    {
+      "type": "Table",
+      "params": {
+        "caption": "沈括主要著作一览",
+        "headers": "书名,成书年代,卷数,主要内容,存佚",
+        "rows": "[[meng-xi-bi-tan|梦溪笔谈]]|约1088年|26卷|笔记体综合性著作，涉及自然科学与人文|存\n补笔谈|约1090年|3卷|《梦溪笔谈》的补遗|存\n续笔谈|约1091年|1卷|杂记与考辨|存\n良方|约1070年|15卷|医方汇集，后与苏轼方书合刊|残\n使契丹图抄|1075年|—|出使辽国沿途山川道里与风俗|佚\n长兴集|—|41卷|诗文集|残"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "下面给出本页面在内容目录中对应的数据片段，用以说明内容即内容块树的存储形式。这一块由代码块渲染："
+      },
+      "children": []
+    },
+    {
+      "type": "CodeBlock",
+      "params": {
+        "language": "json",
+        "code": "{\n  \"title\": \"沈括\",\n  \"namespace\": \"main\",\n  \"categories\": [\"北宋官员\", \"北宋科学家\", \"杭州人\"],\n  \"blocks\": [\n    { \"type\": \"Notice\", \"params\": { \"type\": \"info\", \"text\": \"……\" } },\n    { \"type\": \"Infobox\", \"params\": { \"name\": \"沈括\", \"rows\": [] } },\n    { \"type\": \"Collapsible\", \"params\": { \"title\": \"边界交涉的一段插曲\" },\n      \"children\": [ { \"type\": \"Image\" }, { \"type\": \"Paragraph\" } ] }\n  ],\n  \"raw\": { \"css\": \"\", \"js\": \"\" }\n}"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "评价" },
+      "children": []
+    },
+    {
+      "type": "Quote",
+      "params": {
+        "text": "予退处林下，深居绝过从，思平日与客言者，时纪一事于笔，则若有所晤言，萧然移日。所与谈者，唯笔砚而已，谓之《笔谈》。",
+        "source": "沈括，《梦溪笔谈》自序"
+      },
+      "children": []
+    },
+    {
+      "type": "Paragraph",
+      "params": {
+        "text": "后世对沈括的评价多集中于其博学与实证精神。《宋史》称他博学善文，于天文、方志、律历、音乐、医药、卜算无所不通。也有研究者指出，他在政务与军事上的判断并非总是稳妥，永乐城之败即是一例。"
+      },
+      "children": []
+    },
+    {
+      "type": "Notice",
+      "params": {
+        "type": "warning",
+        "text": "本条目部分内容依据二手研究整理，具体年代与职官名称请以原始文献为准。样例页不追求史实完整。"
+      },
+      "children": []
+    },
+    {
+      "type": "Heading",
+      "params": { "level": "2", "text": "参见" },
+      "children": []
+    },
+    {
+      "type": "List",
+      "params": {
+        "style": "无序",
+        "items": "[[meng-xi-bi-tan|梦溪笔谈]]\n[[bei-song-ke-ji|北宋科技]]\n[[huo-zi-yin-shua|活字印刷术]]\n[[su-song|苏颂]]（同时代科学家，主持制造水运仪象台）\n[[song-liao-bian-jie|宋辽边界交涉]]（尚未创建，用于演示红链样式）"
+      },
+      "children": []
+    },
+    {
+      "type": "Navbox",
+      "params": {
+        "title": "沈括",
+        "links": "",
+        "groups": [
+          { "label": "著作", "links": "[[meng-xi-bi-tan|梦溪笔谈]]、补笔谈、续笔谈、[[su-shen-liang-fang|苏沈良方]]、长兴集" },
+          { "label": "学术", "links": "隙积术、会圆术、十二气历、奉元历" },
+          { "label": "相关人物", "links": "[[wang-an-shi|王安石]]、[[su-shi|苏轼]]、[[bi-sheng|毕昇]]、[[su-song|苏颂]]" }
+        ]
+      },
+      "children": []
+    }
+  ],
+  "raw": { "css": "", "js": "" }
+}
